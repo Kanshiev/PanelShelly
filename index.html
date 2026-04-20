@@ -99,52 +99,58 @@
         .error-text { color: #ff6b8b; font-weight: bold; }
         .unit { font-size: 0.85rem; color: #8b929c; margin-left: 2px; }
 
-        /* --- Горизонтальные карточки (Реле) --- */
+        /* --- Горизонтальные карточки (Реле и Свет) --- */
+        .section-title {
+            color: #8b929c; font-size: 0.85rem; width: 100%; max-width: 600px;
+            text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; margin-bottom: -5px;
+            padding-left: 5px; box-sizing: border-box;
+        }
+
         .relays-container {
-            width: 100%;
-            max-width: 600px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 15px;
+            width: 100%; max-width: 600px; display: flex; flex-direction: column;
+            gap: 12px; margin-top: 15px;
         }
 
         .relay-card {
-            background-color: #272a31;
-            border-radius: 12px;
-            padding: 12px 15px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
+            background-color: #272a31; border-radius: 12px; padding: 12px 15px;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: all 0.3s ease;
             border: 2px solid transparent;
         }
 
         .relay-card.active { border: 2px solid #007bff; background-color: #212833; }
+        .relay-left { display: flex; align-items: flex-start; gap: 15px; flex-grow: 1; }
         
-        .relay-left { display: flex; align-items: center; gap: 15px; flex-grow: 1; }
-        
+        /* Иконки устройств */
         .relay-device-icon {
-            background-color: #92313b;
-            width: 44px; height: 44px;
-            border-radius: 8px;
+            width: 44px; height: 44px; border-radius: 8px; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
-            border: 2px solid #1a1c21;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
-            color: #ffffff;
+            border: 2px solid #1a1c21; box-shadow: inset 0 0 10px rgba(0,0,0,0.3); color: #ffffff;
         }
+        .icon-ev { background-color: #92313b; }
+        .icon-light { background-color: #d35400; } /* Янтарный цвет для света */
 
-        .relay-info { display: flex; flex-direction: column; gap: 4px; }
+        .relay-info { display: flex; flex-direction: column; gap: 4px; width: 100%; padding-top: 2px; }
         .relay-name { font-size: 1rem; font-weight: 700; color: #ffffff; }
-        
         .relay-stats { display: flex; gap: 15px; font-size: 0.85rem; color: #e0e6ed; font-weight: 600; }
         .relay-stats span { display: flex; align-items: center; gap: 4px; }
         .relay-stats .sensor-icon { width: 12px; height: 12px; color: #8b929c; }
 
+        /* Ползунок яркости */
+        .dimmer-slider {
+            -webkit-appearance: none; width: 95%; height: 6px;
+            background: #1e2025; border-radius: 4px; outline: none; margin-top: 8px; margin-bottom: 5px;
+        }
+        .dimmer-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 18px; height: 18px; border-radius: 50%;
+            background: #6db1ff; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        /* Кнопка включения */
         .power-btn {
             width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0; align-self: center;
             transition: all 0.2s ease; outline: none; box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
         .power-btn svg { width: 20px; height: 20px; fill: currentColor; }
@@ -160,6 +166,8 @@
         <symbol id="icon-temp" viewBox="0 0 24 24"><path d="M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 13 5V8H11V5A1 1 0 0 1 12 4Z" fill="currentColor"/></symbol>
         <symbol id="icon-power" viewBox="0 0 24 24"><path d="M12 21c-4.97 0-9-4.03-9-9 0-3.32 1.8-6.22 4.47-7.79l1.01 1.74A7.001 7.001 0 0 0 5 12c0 3.86 3.14 7 7 7s7-3.14 7-7c0-2.58-1.4-4.93-3.64-6.19l1.01-1.74C19.16 5.67 21 8.65 21 12c0 4.97-4.03 9-9 9zm-1-18h2v9h-2V3z" fill="currentColor"/></symbol>
         <symbol id="icon-lightning" viewBox="0 0 24 24"><path d="M7 14L11 14L11 22L17 10L13 10L13 2Z" fill="currentColor"/></symbol>
+        <symbol id="icon-bulb" viewBox="0 0 24 24"><path d="M12 2C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm-1 19c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H11v1z" fill="currentColor"/></symbol>
+        <symbol id="icon-sun" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3zm0-14c-.55 0-1 .45-1 1v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1zm8 9h-2c-.55 0-1 .45-1 1s.45 1 1 1h2c.55 0 1-.45 1-1s-.45-1-1-1zm-17 0H1c-.55 0-1 .45-1 1s.45 1 1 1h2c.55 0 1-.45 1-1s-.45-1-1-1zm17.66-5.66l-1.41-1.41c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41l1.41 1.41c.39.39 1.02.39 1.41 0s.39-1.02 0-1.41zM5.75 19.66l-1.41-1.41c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41l1.41 1.41c.39.39 1.02.39 1.41 0s.39-1.02 0-1.41zM12 20c-.55 0-1 .45-1 1v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1zm7.66-1.59l-1.41-1.41c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41l1.41 1.41c.39.39 1.02.39 1.41 0s.39-1.02 0-1.41zM5.75 4.34l-1.41-1.41c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41l1.41 1.41c.39.39 1.02.39 1.41 0s.39-1.02 0-1.41z" fill="currentColor"/></symbol>
     </svg>
 
     <h1>Мой дом</h1>
@@ -185,7 +193,6 @@
         <div class="device-card">
             <div class="device-title">ILP koti</div>
             <div class="device-subtitle">Большая комната</div>
-            
             <div class="sensor-data">
                 <div class="sensor-item">
                     <span class="sensor-icon"><svg width="18" height="18"><use href="#icon-lightning"></use></svg></span>
@@ -198,18 +205,17 @@
                     <span id="ilp-voltage">0.0</span> <span class="unit">V</span>
                 </div>
             </div>
-
             <div id="ilp-badge" class="status-badge off">ОЖИДАНИЕ</div>
             <div class="update-time" id="ilp-updated">Синхронизация...</div>
         </div>
-
     </div>
 
-    <div class="relays-container">
+    <div class="section-title">Зарядка авто</div>
+    <div class="relays-container" style="margin-top: 5px;">
         
         <div class="relay-card" id="card-ev1">
             <div class="relay-left">
-                <div class="relay-device-icon"><svg width="24" height="24"><use href="#icon-lightning"></use></svg></div>
+                <div class="relay-device-icon icon-ev"><svg width="24" height="24"><use href="#icon-lightning"></use></svg></div>
                 <div class="relay-info">
                     <div class="relay-name">EV lataus (Outlander)</div>
                     <div class="relay-stats">
@@ -218,14 +224,14 @@
                     </div>
                 </div>
             </div>
-            <button class="power-btn off" id="btn-ev1" onclick="toggleRelay('08b61f69c128', 'ev1')">
+            <button class="power-btn off" id="btn-ev1" onclick="toggleDevice('08b61f69c128', 'ev1', 'relay')">
                 <svg><use href="#icon-power"></use></svg>
             </button>
         </div>
 
         <div class="relay-card" id="card-ev2">
             <div class="relay-left">
-                <div class="relay-device-icon"><svg width="24" height="24"><use href="#icon-lightning"></use></svg></div>
+                <div class="relay-device-icon icon-ev"><svg width="24" height="24"><use href="#icon-lightning"></use></svg></div>
                 <div class="relay-info">
                     <div class="relay-name">EV lataus (e-Up)</div>
                     <div class="relay-stats">
@@ -234,7 +240,80 @@
                     </div>
                 </div>
             </div>
-            <button class="power-btn off" id="btn-ev2" onclick="toggleRelay('b0b21c0f6728', 'ev2')">
+            <button class="power-btn off" id="btn-ev2" onclick="toggleDevice('b0b21c0f6728', 'ev2', 'relay')">
+                <svg><use href="#icon-power"></use></svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="section-title" style="margin-top: 20px;">Освещение</div>
+    <div class="relays-container" style="margin-top: 5px;">
+        
+        <div class="relay-card" id="card-light1">
+            <div class="relay-left">
+                <div class="relay-device-icon icon-light"><svg width="24" height="24"><use href="#icon-bulb"></use></svg></div>
+                <div class="relay-info">
+                    <div class="relay-name">Кухня мягкий 1</div>
+                    <div class="relay-stats" style="margin-top: 3px;">
+                        <span style="color: #6db1ff;"><span class="sensor-icon" style="color: #6db1ff;"><svg><use href="#icon-sun"></use></svg></span> <span id="br-light1">0%</span></span>
+                    </div>
+                    <input type="range" min="1" max="100" value="0" class="dimmer-slider" id="slider-light1"
+                           onchange="setBrightness('98cdac2d2465', 'light1', this.value)"
+                           oninput="document.getElementById('br-light1').innerText = this.value + '%'; this.dataset.dragging = true;"
+                           onmouseup="delete this.dataset.dragging" ontouchend="delete this.dataset.dragging">
+                </div>
+            </div>
+            <button class="power-btn off" id="btn-light1" onclick="toggleDevice('98cdac2d2465', 'light1', 'light')">
+                <svg><use href="#icon-power"></use></svg>
+            </button>
+        </div>
+
+        <div class="relay-card" id="card-light2">
+            <div class="relay-left">
+                <div class="relay-device-icon icon-light"><svg width="24" height="24"><use href="#icon-bulb"></use></svg></div>
+                <div class="relay-info">
+                    <div class="relay-name">Кухня мягкий 2</div>
+                    <div class="relay-stats" style="margin-top: 3px;">
+                        <span style="color: #6db1ff;"><span class="sensor-icon" style="color: #6db1ff;"><svg><use href="#icon-sun"></use></svg></span> <span id="br-light2">0%</span></span>
+                    </div>
+                    <input type="range" min="1" max="100" value="0" class="dimmer-slider" id="slider-light2"
+                           onchange="setBrightness('349454777f7a', 'light2', this.value)"
+                           oninput="document.getElementById('br-light2').innerText = this.value + '%'; this.dataset.dragging = true;"
+                           onmouseup="delete this.dataset.dragging" ontouchend="delete this.dataset.dragging">
+                </div>
+            </div>
+            <button class="power-btn off" id="btn-light2" onclick="toggleDevice('349454777f7a', 'light2', 'light')">
+                <svg><use href="#icon-power"></use></svg>
+            </button>
+        </div>
+
+        <div class="relay-card" id="card-light3">
+            <div class="relay-left">
+                <div class="relay-device-icon icon-light"><svg width="24" height="24"><use href="#icon-bulb"></use></svg></div>
+                <div class="relay-info">
+                    <div class="relay-name">Кухня мягкий 3</div>
+                    <div class="relay-stats" style="margin-top: 3px;">
+                        <span style="color: #6db1ff;"><span class="sensor-icon" style="color: #6db1ff;"><svg><use href="#icon-sun"></use></svg></span> <span id="br-light3">0%</span></span>
+                    </div>
+                    <input type="range" min="1" max="100" value="0" class="dimmer-slider" id="slider-light3"
+                           onchange="setBrightness('98cdac2c88f4', 'light3', this.value)"
+                           oninput="document.getElementById('br-light3').innerText = this.value + '%'; this.dataset.dragging = true;"
+                           onmouseup="delete this.dataset.dragging" ontouchend="delete this.dataset.dragging">
+                </div>
+            </div>
+            <button class="power-btn off" id="btn-light3" onclick="toggleDevice('98cdac2c88f4', 'light3', 'light')">
+                <svg><use href="#icon-power"></use></svg>
+            </button>
+        </div>
+
+        <div class="relay-card" id="card-light4">
+            <div class="relay-left" style="align-items: center;">
+                <div class="relay-device-icon icon-light"><svg width="24" height="24"><use href="#icon-bulb"></use></svg></div>
+                <div class="relay-info">
+                    <div class="relay-name">Свет верх</div>
+                </div>
+            </div>
+            <button class="power-btn off" id="btn-light4" onclick="toggleDevice('441793a671e8', 'light4', 'relay')">
                 <svg><use href="#icon-power"></use></svg>
             </button>
         </div>
@@ -256,13 +335,25 @@
             return await response.json();
         }
 
-        // Парсинг 
+        // Парсинг данных (теперь понимает и лампы)
         function extractRelayData(status) {
-            let power = 0, voltage = null, isOn = false;
+            let power = 0, voltage = null, isOn = false, brightness = null;
 
-            if (status.relays && status.relays.length > 0) isOn = status.relays[0].ison;
-            else if (status['switch:0'] && status['switch:0'].output !== undefined) isOn = status['switch:0'].output;
+            // Статус ВКЛ/ВЫКЛ и Яркость
+            if (status.lights && status.lights.length > 0) {
+                isOn = status.lights[0].ison;
+                brightness = status.lights[0].brightness;
+            } else if (status.relays && status.relays.length > 0) {
+                isOn = status.relays[0].ison;
+                if (status.relays[0].brightness !== undefined) brightness = status.relays[0].brightness;
+            } else if (status['light:0']) {
+                isOn = status['light:0'].output;
+                brightness = status['light:0'].brightness;
+            } else if (status['switch:0'] && status['switch:0'].output !== undefined) {
+                isOn = status['switch:0'].output;
+            }
             
+            // Мощность и напряжение
             if (status.meters && status.meters.length > 0) {
                 power = status.meters[0].power || 0;
                 if (status.meters[0].voltage !== undefined) voltage = status.meters[0].voltage;
@@ -276,15 +367,11 @@
                 if (status.emeters[0].voltage !== undefined) voltage = status.emeters[0].voltage;
             }
 
-            return { power, voltage, isOn };
+            return { power, voltage, isOn, brightness };
         }
 
-        // UI функции (теперь они не ломают друг друга)
         function updateClimateUI(res) {
-            if (!res.isok) {
-                document.getElementById('ht-updated').innerHTML = `<span class="error-text">Ожидание сети...</span>`;
-                return;
-            }
+            if (!res.isok) return;
             const status = res.data.device_status;
             if (status.tmp && status.tmp.value !== undefined) document.getElementById('ht-temp').innerText = status.tmp.value.toFixed(1);
             if (status.hum && status.hum.value !== undefined) document.getElementById('ht-humidity').innerText = status.hum.value.toFixed(1);
@@ -294,16 +381,12 @@
         function updatePumpUI(res) {
             if (!res.isok) return;
             const { power, voltage, isOn } = extractRelayData(res.data.device_status);
-            
             document.getElementById('ilp-power').innerText = power.toFixed(1);
-            
             if (voltage !== null) {
                 document.getElementById('ilp-voltage-row').style.display = 'flex';
                 document.getElementById('ilp-voltage').innerText = voltage.toFixed(1);
             }
-
             document.getElementById('ilp-updated').innerText = `Обновлено: ${new Date().toLocaleTimeString()}`;
-
             const badge = document.getElementById('ilp-badge');
             if (isOn) {
                 badge.className = 'status-badge on'; badge.innerText = 'ВКЛЮЧЕН';
@@ -312,17 +395,17 @@
             }
         }
 
-        function updateRelayUI(res, prefix) {
-            if (!res.isok) return; // Если ошибка - просто не трогаем интерфейс, оставляем старые значения
-            const { power, voltage, isOn } = extractRelayData(res.data.device_status);
+        function updateRelayUI(res, prefix, isLight = false) {
+            if (!res.isok) return; 
+            const { power, voltage, isOn, brightness } = extractRelayData(res.data.device_status);
             
-            document.getElementById(`${prefix}-power`).innerText = power.toFixed(1);
-            
-            // Если напряжение пришло - обновляем. Если нет - просто не трогаем.
-            if (voltage !== null) {
-                document.getElementById(`${prefix}-voltage`).innerText = voltage.toFixed(1);
+            // Если это не лампа, обновляем ватты и вольты
+            if (!isLight) {
+                document.getElementById(`${prefix}-power`).innerText = power.toFixed(1);
+                if (voltage !== null) document.getElementById(`${prefix}-voltage`).innerText = voltage.toFixed(1);
             }
 
+            // Управление кнопкой
             const btn = document.getElementById(`btn-${prefix}`);
             const card = document.getElementById(`card-${prefix}`);
             if (isOn) {
@@ -330,44 +413,49 @@
             } else {
                 btn.className = 'power-btn off'; card.classList.remove('active');
             }
+
+            // Управление ползунком яркости (если это диммер и юзер его сейчас не дергает)
+            if (isLight && brightness !== null) {
+                const slider = document.getElementById(`slider-${prefix}`);
+                if (slider && !slider.dataset.dragging) {
+                    slider.value = brightness;
+                    document.getElementById(`br-${prefix}`).innerText = brightness + '%';
+                }
+            }
         }
 
-        // НОВЫЙ ДВИЖОК ОПРОСА (Независимый)
         let isUpdating = false;
 
         async function syncAllDevices() {
             if (isUpdating) return;
             isUpdating = true;
 
-            // Массив наших устройств для опроса
             const devices = [
                 { id: PUMP_DEVICE_ID, ui: updatePumpUI, type: 'pump' },
-                { id: '08b61f69c128', ui: updateRelayUI, type: 'ev1' },
-                { id: 'b0b21c0f6728', ui: updateRelayUI, type: 'ev2' },
-                { id: HT_DEVICE_ID, ui: updateClimateUI, type: 'climate' }
+                { id: '08b61f69c128', ui: (res) => updateRelayUI(res, 'ev1', false), type: 'ev1' },
+                { id: 'b0b21c0f6728', ui: (res) => updateRelayUI(res, 'ev2', false), type: 'ev2' },
+                { id: HT_DEVICE_ID, ui: updateClimateUI, type: 'climate' },
+                // Освещение
+                { id: '98cdac2d2465', ui: (res) => updateRelayUI(res, 'light1', true), type: 'light1' },
+                { id: '349454777f7a', ui: (res) => updateRelayUI(res, 'light2', true), type: 'light2' },
+                { id: '98cdac2c88f4', ui: (res) => updateRelayUI(res, 'light3', true), type: 'light3' },
+                { id: '441793a671e8', ui: (res) => updateRelayUI(res, 'light4', false), type: 'light4' }
             ];
 
-            // Опрашиваем по очереди с паузой, чтобы прокси не блокировал
             for (const dev of devices) {
                 try {
                     const res = await fetchShellyStatus(dev.id);
-                    if (dev.type.startsWith('ev')) dev.ui(res, dev.type);
-                    else dev.ui(res);
+                    dev.ui(res);
                 } catch (e) {
                     console.error(`Ошибка при опросе ${dev.id}:`, e);
-                    if (dev.type === 'climate') {
-                        document.getElementById('ht-updated').innerHTML = `<span class="error-text">Ожидание прокси...</span>`;
-                    }
                 }
-                // Микро-пауза перед следующим запросом
                 await new Promise(r => setTimeout(r, 400));
             }
-
             isUpdating = false;
         }
 
-        // Кнопки Вкл/Выкл
-        async function toggleRelay(deviceId, prefix) {
+        // Универсальная кнопка Вкл/Выкл (понимает relay и light)
+        async function toggleDevice(deviceId, prefix, endpointType) {
             const btn = document.getElementById(`btn-${prefix}`);
             const isCurrentlyOn = btn.classList.contains('on');
             const command = isCurrentlyOn ? 'off' : 'on';
@@ -380,22 +468,37 @@
             }
 
             try {
-                const targetUrl = 'https://shelly-70-eu.shelly.cloud/device/relay/control';
+                // Если это свет, шлем на light/control, если реле - на relay/control
+                const targetUrl = `https://shelly-70-eu.shelly.cloud/device/${endpointType}/control`;
                 const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
                 await fetch(proxyUrl, {
                     method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: `id=${deviceId}&auth_key=${AUTH_KEY}&channel=0&turn=${command}`
                 });
-                
-                setTimeout(() => {
-                    fetchShellyStatus(deviceId).then(res => updateRelayUI(res, prefix));
-                }, 1500);
             } catch (error) {
                 console.error("Ошибка при нажатии:", error);
             }
         }
 
-        // Увеличили интервал до 15 секунд для стабильности
+        // Функция изменения яркости (только для ламп)
+        async function setBrightness(deviceId, prefix, value) {
+            try {
+                const targetUrl = 'https://shelly-70-eu.shelly.cloud/device/light/control';
+                const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
+                // При изменении яркости заодно отправляем команду turn=on, чтобы лампа включилась
+                await fetch(proxyUrl, {
+                    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `id=${deviceId}&auth_key=${AUTH_KEY}&channel=0&turn=on&brightness=${value}`
+                });
+                
+                // Включаем интерфейс (кнопку и рамку), если лампа была выключена
+                document.getElementById(`btn-${prefix}`).className = 'power-btn on';
+                document.getElementById(`card-${prefix}`).classList.add('active');
+            } catch (error) {
+                console.error("Ошибка яркости:", error);
+            }
+        }
+
         syncAllDevices();
         setInterval(syncAllDevices, 15000); 
     </script>
