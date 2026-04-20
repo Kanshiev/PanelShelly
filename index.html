@@ -37,7 +37,7 @@
             justify-content: center;
         }
 
-        /* --- Карточка климата (Вертикальная) --- */
+        /* --- Квадратные карточки (Климат, Насос) --- */
         .device-card {
             background-color: #2b3038;
             border-radius: 16px;
@@ -61,12 +61,18 @@
             font-size: 0.85rem;
             color: #8fa0b3;
             margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .sensor-data {
             display: flex; align-items: center; justify-content: center;
             width: 100%; margin-bottom: 15px; padding: 12px;
             background-color: #21252b; border-radius: 12px; box-sizing: border-box;
+        }
+        
+        .sensor-data.column {
+            flex-direction: column; gap: 8px;
         }
 
         .sensor-item {
@@ -79,10 +85,18 @@
         .temp-badge {
             background-color: #353b45; padding: 12px 25px; border-radius: 20px;
             font-size: 1.6rem; font-weight: bold; display: flex; align-items: center;
-            gap: 12px; margin-top: 5px;
+            gap: 12px; margin-top: 5px; transition: all 0.3s ease;
         }
+        
+        /* Статус для бескнопочных реле (Насос) */
+        .status-badge {
+            font-size: 1.1rem; padding: 10px 25px; border-radius: 20px;
+            font-weight: bold; margin-top: 5px; transition: all 0.3s ease;
+        }
+        .status-badge.on { background-color: #007bff; color: #fff; box-shadow: 0 0 15px rgba(0, 123, 255, 0.4); }
+        .status-badge.off { background-color: #353b45; color: #8fa0b3; }
 
-        .update-time { font-size: 0.75rem; color: #6c7a8c; margin-top: 18px; }
+        .update-time { font-size: 0.75rem; color: #6c7a8c; margin-top: 18px; text-align: center;}
         .error-msg { color: #ff6b6b; font-size: 0.9rem; margin-top: 10px; display: none; }
 
         /* --- Карточки Реле (Горизонтальные) --- */
@@ -107,21 +121,13 @@
             border: 2px solid transparent;
         }
 
-        /* Стиль когда реле включено (Синяя обводка) */
-        .relay-card.active {
-            border: 2px solid #007bff;
-            background-color: #2b3443;
-        }
-
+        .relay-card.active { border: 2px solid #007bff; background-color: #2b3443; }
         .relay-left { display: flex; align-items: center; gap: 15px; flex-grow: 1; }
         
         .relay-icon-box {
-            background-color: #7b2c3a; /* Бордовый фон иконки как на скрине */
-            width: 46px; height: 46px;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.3rem;
-            border: 2px solid #55212a;
+            background-color: #7b2c3a; width: 46px; height: 46px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; border: 2px solid #55212a;
         }
 
         .relay-info { display: flex; flex-direction: column; gap: 5px; }
@@ -131,30 +137,13 @@
 
         /* Кнопка включения */
         .power-btn {
-            width: 50px; height: 50px;
-            border-radius: 50%;
-            border: none;
-            cursor: pointer;
+            width: 50px; height: 50px; border-radius: 50%; border: none; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s ease;
-            outline: none;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.2s ease; outline: none; box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
-
         .power-btn svg { width: 22px; height: 22px; fill: currentColor; }
-
-        /* Состояние ВЫКЛ */
-        .power-btn.off {
-            background-color: #ffffff;
-            color: #007bff;
-        }
-
-        /* Состояние ВКЛ */
-        .power-btn.on {
-            background-color: #007bff;
-            color: #ffffff;
-            box-shadow: 0 0 15px rgba(0, 123, 255, 0.4);
-        }
+        .power-btn.off { background-color: #ffffff; color: #007bff; }
+        .power-btn.on { background-color: #007bff; color: #ffffff; box-shadow: 0 0 15px rgba(0, 123, 255, 0.4); }
 
     </style>
 </head>
@@ -163,6 +152,7 @@
     <h1>Мой дом</h1>
 
     <div class="dashboard-container">
+        
         <div class="device-card">
             <div class="device-title">КЛИМАТ ДОМА</div>
             <div class="device-subtitle">Гостиная</div>
@@ -179,6 +169,27 @@
             <div id="ht-error" class="error-msg">Ошибка связи</div>
             <div class="update-time" id="ht-updated">Синхронизация...</div>
         </div>
+
+        <div class="device-card">
+            <div class="device-title">ILP koti</div>
+            <div class="device-subtitle">Большая комната</div>
+            
+            <div class="sensor-data column">
+                <div class="sensor-item" title="Мощность">
+                    <span class="sensor-icon" style="color: #f1c40f;">⚡</span>
+                    <span id="ilp-power">0.0</span> <span style="font-size: 0.8rem; color: #8fa0b3;">W</span>
+                </div>
+                <div class="sensor-item" title="Напряжение">
+                    <span class="sensor-icon" style="color: #3498db;">🔌</span>
+                    <span id="ilp-voltage">0.0</span> <span style="font-size: 0.8rem; color: #8fa0b3;">V</span>
+                </div>
+            </div>
+
+            <div id="ilp-badge" class="status-badge off">ОЖИДАНИЕ</div>
+            
+            <div class="update-time" id="ilp-updated">Синхронизация...</div>
+        </div>
+
     </div>
 
     <div class="relays-container">
@@ -219,7 +230,8 @@
 
     <script>
         const AUTH_KEY = "MWEzMWI0dWlk07E8AECF7EC066046A87D6410853E336FBB1D6F260B8376F3C047EE699E8019EA03F97657F6EF690";
-        const HT_DEVICE_ID = "c9f4e3"; // Твой термометр
+        const HT_DEVICE_ID = "c9f4e3"; // Домашний термометр
+        const PUMP_DEVICE_ID = "7c87ceb51d71"; // Тепловой насос
 
         // -------------------------------------
         // ЛОГИКА 1: КЛИМАТ (Раз в минуту)
@@ -251,7 +263,55 @@
         }
 
         // -------------------------------------
-        // ЛОГИКА 2: ЗАРЯДКИ/РЕЛЕ (Каждые 10 секунд)
+        // ЛОГИКА 2: НАСОС (Только чтение, каждые 10 сек)
+        // -------------------------------------
+        async function fetchPumpStatus() {
+            try {
+                const targetUrl = 'https://shelly-70-eu.shelly.cloud/device/status';
+                const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
+                const response = await fetch(proxyUrl, {
+                    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `id=${PUMP_DEVICE_ID}&auth_key=${AUTH_KEY}`
+                });
+                const res = await response.json();
+
+                if (res.isok) {
+                    const status = res.data.device_status;
+                    let isOn = false;
+                    let power = 0;
+                    let voltage = 230;
+
+                    if (status.relays && status.relays.length > 0) isOn = status.relays[0].ison;
+                    if (status.meters && status.meters.length > 0) {
+                        power = status.meters[0].power || 0;
+                        if (status.meters[0].voltage) voltage = status.meters[0].voltage;
+                    }
+                    if (status['switch:0']) {
+                        isOn = status['switch:0'].output;
+                        if (status['switch:0'].apower !== undefined) power = status['switch:0'].apower;
+                        if (status['switch:0'].voltage !== undefined) voltage = status['switch:0'].voltage;
+                    }
+
+                    document.getElementById('ilp-power').innerText = power.toFixed(1);
+                    document.getElementById('ilp-voltage').innerText = voltage.toFixed(1);
+                    document.getElementById('ilp-updated').innerText = `Обновлено: ${new Date().toLocaleTimeString()}`;
+
+                    const badge = document.getElementById('ilp-badge');
+                    if (isOn) {
+                        badge.className = 'status-badge on';
+                        badge.innerText = 'ВКЛЮЧЕН';
+                    } else {
+                        badge.className = 'status-badge off';
+                        badge.innerText = 'ВЫКЛЮЧЕН';
+                    }
+                }
+            } catch (error) {
+                console.error(`Ошибка связи с насосом:`, error);
+            }
+        }
+
+        // -------------------------------------
+        // ЛОГИКА 3: ЗАРЯДКИ (Чтение каждые 10 сек)
         // -------------------------------------
         async function fetchRelayStatus(deviceId, prefix) {
             try {
@@ -269,24 +329,20 @@
                     let power = 0;
                     let voltage = 230;
 
-                    // Парсинг для обычных реле (Gen 1)
                     if (status.relays && status.relays.length > 0) isOn = status.relays[0].ison;
                     if (status.meters && status.meters.length > 0) {
                         power = status.meters[0].power || 0;
                         if (status.meters[0].voltage) voltage = status.meters[0].voltage;
                     }
-                    // Резервный парсинг для новых устройств (Plus 1PM)
                     if (status['switch:0']) {
                         isOn = status['switch:0'].output;
                         if (status['switch:0'].apower !== undefined) power = status['switch:0'].apower;
                         if (status['switch:0'].voltage !== undefined) voltage = status['switch:0'].voltage;
                     }
 
-                    // Обновляем текст Ватт и Вольт
                     document.getElementById(`${prefix}-power`).innerText = power.toFixed(1);
                     document.getElementById(`${prefix}-voltage`).innerText = voltage.toFixed(1);
 
-                    // Обновляем цвет карточки и кнопки
                     const btn = document.getElementById(`btn-${prefix}`);
                     const card = document.getElementById(`card-${prefix}`);
                     if (isOn) {
@@ -305,17 +361,17 @@
         async function updateAllRelays() {
             await fetchRelayStatus('08b61f69c128', 'ev1');
             await fetchRelayStatus('b0b21c0f6728', 'ev2');
+            await fetchPumpStatus();
         }
 
         // -------------------------------------
-        // ЛОГИКА 3: НАЖАТИЕ НА КНОПКУ ПИТАНИЯ
+        // ЛОГИКА 4: НАЖАТИЕ НА КНОПКУ ПИТАНИЯ (Только зарядки)
         // -------------------------------------
         async function toggleRelay(deviceId, prefix) {
             const btn = document.getElementById(`btn-${prefix}`);
             const isCurrentlyOn = btn.classList.contains('on');
             const command = isCurrentlyOn ? 'off' : 'on';
             
-            // "Оптимистичный" UI — сразу меняем цвет кнопки для ощущения скорости
             const card = document.getElementById(`card-${prefix}`);
             if (command === 'on') {
                 btn.className = 'power-btn on';
@@ -326,7 +382,6 @@
             }
 
             try {
-                // Отправляем команду в облако
                 const targetUrl = 'https://shelly-70-eu.shelly.cloud/device/relay/control';
                 const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
                 await fetch(proxyUrl, {
@@ -334,11 +389,9 @@
                     body: `id=${deviceId}&auth_key=${AUTH_KEY}&channel=0&turn=${command}`
                 });
                 
-                // Ждем секунду и запрашиваем точные ватты, так как они меняются не мгновенно
                 setTimeout(() => fetchRelayStatus(deviceId, prefix), 1500);
             } catch (error) {
                 console.error("Ошибка при нажатии:", error);
-                // Если ошибка — возвращаем UI как было
                 fetchRelayStatus(deviceId, prefix);
             }
         }
@@ -347,8 +400,8 @@
         updateClimateData();
         updateAllRelays();
         
-        setInterval(updateClimateData, 60000); // Климат раз в минуту
-        setInterval(updateAllRelays, 10000);   // Реле каждые 10 секунд
+        setInterval(updateClimateData, 60000); 
+        setInterval(updateAllRelays, 10000);   
     </script>
 </body>
 </html>
