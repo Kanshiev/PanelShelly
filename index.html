@@ -128,7 +128,7 @@
                 </div>
                 <input type="range" min="1" max="100" value="0" class="dimmer-slider master-slider" id="slider-master"
                        onchange="setMasterBrightness(this.value)"
-                       oninput="document.getElementById('br-master').innerText = this.value + '%'; isCommandExecuting = true;">
+                       oninput="lockUIAndPreview('master', this.value)">
             </div>
 
             <div class="relay-card" id="card-light1">
@@ -139,7 +139,7 @@
                         <div class="relay-stats" style="margin-top: 3px;"><span style="color: #6db1ff;"><span class="sensor-icon" style="color: #6db1ff;"><svg><use href="#icon-sun"></use></svg></span> <span id="br-light1">0%</span></span></div>
                         <input type="range" min="1" max="100" value="0" class="dimmer-slider" id="slider-light1" 
                                onchange="setBrightness('98cdac2d2465', 'light1', this.value)" 
-                               oninput="updateSliderUI('light1', this.value)">
+                               oninput="lockUIAndPreview('light1', this.value)">
                     </div>
                 </div>
                 <button class="power-btn off" id="btn-light1" onclick="toggleDevice('98cdac2d2465', 'light1', 'light')"><svg><use href="#icon-power"></use></svg></button>
@@ -153,7 +153,7 @@
                         <div class="relay-stats" style="margin-top: 3px;"><span style="color: #6db1ff;"><span class="sensor-icon" style="color: #6db1ff;"><svg><use href="#icon-sun"></use></svg></span> <span id="br-light2">0%</span></span></div>
                         <input type="range" min="1" max="100" value="0" class="dimmer-slider" id="slider-light2" 
                                onchange="setBrightness('349454777f7a', 'light2', this.value)" 
-                               oninput="updateSliderUI('light2', this.value)">
+                               oninput="lockUIAndPreview('light2', this.value)">
                     </div>
                 </div>
                 <button class="power-btn off" id="btn-light2" onclick="toggleDevice('349454777f7a', 'light2', 'light')"><svg><use href="#icon-power"></use></svg></button>
@@ -167,7 +167,7 @@
                         <div class="relay-stats" style="margin-top: 3px;"><span style="color: #6db1ff;"><span class="sensor-icon" style="color: #6db1ff;"><svg><use href="#icon-sun"></use></svg></span> <span id="br-light3">0%</span></span></div>
                         <input type="range" min="1" max="100" value="0" class="dimmer-slider" id="slider-light3" 
                                onchange="setBrightness('98cdac2c88f4', 'light3', this.value)" 
-                               oninput="updateSliderUI('light3', this.value)">
+                               oninput="lockUIAndPreview('light3', this.value)">
                     </div>
                 </div>
                 <button class="power-btn off" id="btn-light3" onclick="toggleDevice('98cdac2c88f4', 'light3', 'light')"><svg><use href="#icon-power"></use></svg></button>
@@ -204,18 +204,32 @@
         ];
         const TOP_LIGHT = { id: '441793a671e8', prefix: 'light4' };
 
-        // Глобальный флаг-блокиратор фонового опроса
+        // Блокираторы и таймеры
         let isUpdating = false;
-        let isCommandExecuting = false;
+        let commandLockTimeout = null; 
 
+        // ЗАДЕРЖКА. Главная деталь для стабильности.
         const delay = ms => new Promise(res => setTimeout(res, ms));
+
+        // Функция блокировки. Если мы что-то нажали, фоновый опрос не должен ломать UI
+        function lockBackgroundSync() {
+            if (commandLockTimeout) clearTimeout(commandLockTimeout);
+            // Блокируем автообновление на 4.5 секунды после ЛЮБОГО действия
+            commandLockTimeout = setTimeout(() => {
+                commandLockTimeout = null;
+                syncAllDevices(); 
+            }, 4500); 
+        }
+
+        function isLocked() {
+            return commandLockTimeout !== null;
+        }
 
         async function sendShellyCommand(deviceId, endpoint, params) {
             const targetUrl = `https://shelly-70-eu.shelly.cloud/device/${endpoint}/control`;
             const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
             let body = `id=${deviceId}&auth_key=${AUTH_KEY}&channel=0`;
             for (let key in params) body += `&${key}=${params[key]}`;
-
             return fetch(proxyUrl, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body });
         }
 
@@ -236,11 +250,6 @@
             if (status.meters && status.meters.length > 0) { power = status.meters[0].power || 0; if (status.meters[0].voltage !== undefined) voltage = status.meters[0].voltage; } 
             else if (status['switch:0']) { power = status['switch:0'].apower || 0; if (status['switch:0'].voltage !== undefined) voltage = status['switch:0'].voltage; }
             return { power, voltage, isOn, brightness };
-        }
-
-        function updateSliderUI(prefix, value) {
-            isCommandExecuting = true; // Блокируем фоновый опрос
-            document.getElementById(`br-${prefix}`).innerText = value + '%';
         }
 
         function applyLightUI(prefix, isOn, brightness) {
@@ -271,8 +280,7 @@
 
         // --- Главный цикл ---
         async function syncAllDevices() {
-            // Если сейчас отправляется команда или мы тянем ползунок - отменяем фоновый опрос
-            if (isUpdating || isCommandExecuting) return;
+            if (isUpdating || isLocked()) return; // Если есть блок - отмена
             isUpdating = true;
             let softLightBrightnesses = [];
 
@@ -288,87 +296,84 @@
             ];
 
             for (const dev of devices) {
-                // Еще раз проверяем, не начал ли юзер что-то нажимать во время долгого цикла
-                if (isCommandExecuting) break; 
+                if (isLocked()) break; // Если во время цикла юзер нажал кнопку - прерываем цикл
                 try { const res = await fetchShellyStatus(dev.id); dev.ui(res); } catch (e) {}
                 await delay(300);
             }
             
-            if (!isCommandExecuting && softLightBrightnesses.length > 0) {
+            if (!isLocked() && softLightBrightnesses.length > 0) {
                 let avg = Math.round(softLightBrightnesses.reduce((a,b)=>a+b, 0) / softLightBrightnesses.length);
                 document.getElementById('slider-master').value = avg; document.getElementById('br-master').innerText = avg + '%';
             }
             isUpdating = false;
         }
 
-        // --- Управление ---
+        // --- Обработка действий пользователя ---
+        
+        // Меняет цифры на экране, пока тянешь ползунок, и блокирует фоновый опрос
+        function lockUIAndPreview(prefix, value) {
+            lockBackgroundSync();
+            document.getElementById(`br-${prefix}`).innerText = value + '%';
+        }
+
         async function toggleDevice(deviceId, prefix, endpointType) {
-            if (isCommandExecuting) return;
-            isCommandExecuting = true;
-            
+            lockBackgroundSync();
             const btn = document.getElementById(`btn-${prefix}`);
             const command = btn.classList.contains('on') ? 'off' : 'on';
             applyLightUI(prefix, command === 'on', null);
-
             try { await sendShellyCommand(deviceId, endpointType, { turn: command }); } catch (error) { }
-            setTimeout(() => { isCommandExecuting = false; syncAllDevices(); }, 1500);
         }
 
         async function setBrightness(deviceId, prefix, value) {
-            isCommandExecuting = true;
+            lockBackgroundSync();
             applyLightUI(prefix, true, value);
             try { await sendShellyCommand(deviceId, 'light', { turn: 'on', brightness: value }); } catch (e) {}
-            setTimeout(() => { isCommandExecuting = false; syncAllDevices(); }, 1500);
         }
 
-        // Мастер-ползунок
+        // Ползунок "Общая яркость"
         async function setMasterBrightness(value) {
-            isCommandExecuting = true;
+            lockBackgroundSync();
             for (let light of SOFT_LIGHTS) {
                 applyLightUI(light.prefix, true, value);
                 try { await sendShellyCommand(light.id, 'light', { turn: 'on', brightness: value }); } catch (e) {}
-                await delay(400); // Увеличили паузу до 400мс
+                await delay(2000); // СТРОГАЯ ЗАДЕРЖКА 2 СЕКУНДЫ между лампами
             }
-            setTimeout(() => { isCommandExecuting = false; syncAllDevices(); }, 1500);
         }
 
-        // Кнопки сценариев
+        // Пресеты
         async function executePreset(action) {
-            if (isCommandExecuting) return; // Защита от двойного клика
-            isCommandExecuting = true;
-            
+            lockBackgroundSync();
             try {
                 if (action === 'OFF') {
+                    // 1. Меняем визуал всех ламп сразу
                     for (let l of SOFT_LIGHTS) applyLightUI(l.prefix, false, 0);
                     applyLightUI(TOP_LIGHT.prefix, false, null);
                     document.getElementById('slider-master').value = 0; document.getElementById('br-master').innerText = '0%';
 
-                    await sendShellyCommand(TOP_LIGHT.id, 'relay', { turn: 'off' }); await delay(400);
-                    for (let l of SOFT_LIGHTS) { await sendShellyCommand(l.id, 'light', { turn: 'off' }); await delay(400); }
+                    // 2. Отправляем команды с ЗАДЕРЖКОЙ В 2 СЕКУНДЫ
+                    await sendShellyCommand(TOP_LIGHT.id, 'relay', { turn: 'off' }); await delay(2000);
+                    for (let l of SOFT_LIGHTS) { await sendShellyCommand(l.id, 'light', { turn: 'off' }); await delay(2000); }
                 } 
                 else if (action === 'MAX') {
                     for (let l of SOFT_LIGHTS) applyLightUI(l.prefix, true, 100);
                     applyLightUI(TOP_LIGHT.prefix, true, null);
                     document.getElementById('slider-master').value = 100; document.getElementById('br-master').innerText = '100%';
 
-                    await sendShellyCommand(TOP_LIGHT.id, 'relay', { turn: 'on' }); await delay(400);
-                    for (let l of SOFT_LIGHTS) { await sendShellyCommand(l.id, 'light', { turn: 'on', brightness: 100 }); await delay(400); }
+                    await sendShellyCommand(TOP_LIGHT.id, 'relay', { turn: 'on' }); await delay(2000);
+                    for (let l of SOFT_LIGHTS) { await sendShellyCommand(l.id, 'light', { turn: 'on', brightness: 100 }); await delay(2000); }
                 } 
                 else {
                     let br = parseInt(action);
                     for (let l of SOFT_LIGHTS) applyLightUI(l.prefix, true, br);
                     document.getElementById('slider-master').value = br; document.getElementById('br-master').innerText = br + '%';
 
-                    for (let l of SOFT_LIGHTS) { await sendShellyCommand(l.id, 'light', { turn: 'on', brightness: br }); await delay(400); }
+                    for (let l of SOFT_LIGHTS) { await sendShellyCommand(l.id, 'light', { turn: 'on', brightness: br }); await delay(2000); }
                 }
             } catch (e) {}
-            
-            // Снимаем блокировку и обновляем данные
-            setTimeout(() => { isCommandExecuting = false; syncAllDevices(); }, 2000);
         }
 
         syncAllDevices();
-        setInterval(syncAllDevices, 15000); 
+        setInterval(syncAllDevices, 20000); // Фоновый опрос теперь раз в 20 секунд
     </script>
 </body>
 </html>
