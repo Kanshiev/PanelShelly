@@ -8,7 +8,7 @@
         /* Темная тема Shelly Cloud */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #16181c; /* Глубокий темный фон */
+            background-color: #16181c;
             color: #ffffff;
             margin: 0;
             padding: 20px;
@@ -37,7 +37,7 @@
             justify-content: center;
         }
 
-        /* --- Квадратные карточки (Климат, Насос) --- */
+        /* --- Квадратные карточки --- */
         .device-card {
             background-color: #272a31;
             border-radius: 12px;
@@ -79,16 +79,14 @@
 
         .sensor-icon { display: flex; align-items: center; color: #6db1ff; }
 
-        /* Изящная плашка температуры */
         .temp-badge {
             background-color: #31363f; padding: 10px 20px; border-radius: 20px;
             font-size: 1.4rem; font-weight: bold; display: flex; align-items: center;
             gap: 10px; margin-top: 5px;
         }
 
-        .temp-badge .sensor-icon { color: #ff6b8b; } /* Красноватая иконка температуры */
+        .temp-badge .sensor-icon { color: #ff6b8b; }
 
-        /* Статус для насоса */
         .status-badge {
             font-size: 0.85rem; padding: 6px 16px; border-radius: 12px;
             font-weight: 600; margin-top: 10px; transition: all 0.3s ease;
@@ -98,9 +96,10 @@
         .status-badge.off { background-color: #1e2025; color: #8b929c; border: 1px solid transparent; }
 
         .update-time { font-size: 0.7rem; color: #5a6069; margin-top: 15px; text-align: center;}
+        .error-text { color: #ff6b8b; font-weight: bold; }
         .unit { font-size: 0.85rem; color: #8b929c; margin-left: 2px; }
 
-        /* --- Карточки Реле (Горизонтальные) --- */
+        /* --- Горизонтальные карточки (Реле) --- */
         .relays-container {
             width: 100%;
             max-width: 600px;
@@ -126,7 +125,6 @@
         
         .relay-left { display: flex; align-items: center; gap: 15px; flex-grow: 1; }
         
-        /* Имитация красного реле Shelly */
         .relay-device-icon {
             background-color: #92313b;
             width: 44px; height: 44px;
@@ -144,7 +142,6 @@
         .relay-stats span { display: flex; align-items: center; gap: 4px; }
         .relay-stats .sensor-icon { width: 12px; height: 12px; color: #8b929c; }
 
-        /* Кнопка включения */
         .power-btn {
             width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
@@ -195,7 +192,7 @@
                     <span id="ilp-power">0.0</span> <span class="unit">W</span>
                 </div>
             </div>
-            <div class="sensor-data">
+            <div class="sensor-data" id="ilp-voltage-row" style="display: none;">
                 <div class="sensor-item">
                     <span class="sensor-icon"><svg width="18" height="18"><use href="#icon-lightning"></use></svg></span>
                     <span id="ilp-voltage">0.0</span> <span class="unit">V</span>
@@ -217,7 +214,7 @@
                     <div class="relay-name">EV lataus (Outlander)</div>
                     <div class="relay-stats">
                         <span><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev1-power">0.0</span> W</span>
-                        <span><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev1-voltage">0.0</span> V</span>
+                        <span id="ev1-voltage-row" style="display: none;"><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev1-voltage">0.0</span> V</span>
                     </div>
                 </div>
             </div>
@@ -233,7 +230,7 @@
                     <div class="relay-name">EV lataus (e-Up)</div>
                     <div class="relay-stats">
                         <span><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev2-power">0.0</span> W</span>
-                        <span><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev2-voltage">0.0</span> V</span>
+                        <span id="ev2-voltage-row" style="display: none;"><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev2-voltage">0.0</span> V</span>
                     </div>
                 </div>
             </div>
@@ -249,7 +246,6 @@
         const HT_DEVICE_ID = "c9f4e3"; 
         const PUMP_DEVICE_ID = "7c87ceb51d71"; 
 
-        // Универсальная функция запроса с защитой
         async function fetchShellyStatus(deviceId) {
             const targetUrl = 'https://shelly-70-eu.shelly.cloud/device/status';
             const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
@@ -260,38 +256,65 @@
             return await response.json();
         }
 
-        // --- Парсинг данных ---
+        // Универсальный глубокий парсер для любых версий Shelly
+        function extractRelayData(status) {
+            let power = 0, voltage = null, isOn = false;
+
+            // 1. Статус ВКЛ/ВЫКЛ
+            if (status.relays && status.relays.length > 0) isOn = status.relays[0].ison;
+            else if (status['switch:0'] && status['switch:0'].output !== undefined) isOn = status['switch:0'].output;
+            
+            // 2. Мощность и напряжение
+            if (status.meters && status.meters.length > 0) {
+                power = status.meters[0].power || 0;
+                if (status.meters[0].voltage !== undefined) voltage = status.meters[0].voltage;
+            } 
+            else if (status['switch:0']) {
+                power = status['switch:0'].apower || 0;
+                if (status['switch:0'].voltage !== undefined) voltage = status['switch:0'].voltage;
+            }
+            else if (status.emeters && status.emeters.length > 0) {
+                power = status.emeters[0].power || 0;
+                if (status.emeters[0].voltage !== undefined) voltage = status.emeters[0].voltage;
+            }
+
+            return { power, voltage, isOn };
+        }
+
+        function getErrorText(res) {
+            if (res.errors && res.errors.invalid_header) return "Неверный ключ";
+            if (res.errors) return Object.values(res.errors)[0] || "Оффлайн";
+            return "Ошибка связи";
+        }
+
         function updateClimateUI(res) {
-            if (!res.isok) return;
+            if (!res.isok) {
+                document.getElementById('ht-updated').innerHTML = `<span class="error-text">${getErrorText(res)}</span>`;
+                return;
+            }
             const status = res.data.device_status;
             if (status.tmp && status.tmp.value !== undefined) document.getElementById('ht-temp').innerText = status.tmp.value.toFixed(1);
             if (status.hum && status.hum.value !== undefined) document.getElementById('ht-humidity').innerText = status.hum.value.toFixed(1);
             document.getElementById('ht-updated').innerText = `Обновлено: ${new Date().toLocaleTimeString()}`;
         }
 
-        function extractRelayData(status) {
-            let power = 0, voltage = 0, isOn = false;
-            // Старые реле
-            if (status.relays && status.relays.length > 0) isOn = status.relays[0].ison;
-            if (status.meters && status.meters.length > 0) {
-                power = status.meters[0].power || 0;
-                voltage = status.meters[0].voltage || 0;
-            }
-            // Новые реле (Plus/Pro)
-            if (status['switch:0']) {
-                if (status['switch:0'].output !== undefined) isOn = status['switch:0'].output;
-                if (status['switch:0'].apower !== undefined) power = status['switch:0'].apower;
-                if (status['switch:0'].voltage !== undefined) voltage = status['switch:0'].voltage;
-            }
-            return { power, voltage, isOn };
-        }
-
         function updatePumpUI(res) {
-            if (!res.isok) return;
+            if (!res.isok) {
+                document.getElementById('ilp-updated').innerHTML = `<span class="error-text">${getErrorText(res)}</span>`;
+                return;
+            }
             const { power, voltage, isOn } = extractRelayData(res.data.device_status);
             
             document.getElementById('ilp-power').innerText = power.toFixed(1);
-            document.getElementById('ilp-voltage').innerText = voltage.toFixed(1);
+            
+            // Адаптивное напряжение: скрываем, если прибор его не измеряет
+            if (voltage !== null) {
+                document.getElementById('ilp-voltage-row').style.display = 'flex';
+                document.getElementById('ilp-voltage').innerText = voltage.toFixed(1);
+            } else {
+                document.getElementById('ilp-voltage-row').style.display = 'none';
+            }
+
             document.getElementById('ilp-updated').innerText = `Обновлено: ${new Date().toLocaleTimeString()}`;
 
             const badge = document.getElementById('ilp-badge');
@@ -303,11 +326,20 @@
         }
 
         function updateRelayUI(res, prefix) {
-            if (!res.isok) return;
+            if (!res.isok) {
+                console.error(`Ошибка реле ${prefix}:`, res);
+                return;
+            }
             const { power, voltage, isOn } = extractRelayData(res.data.device_status);
             
             document.getElementById(`${prefix}-power`).innerText = power.toFixed(1);
-            document.getElementById(`${prefix}-voltage`).innerText = voltage.toFixed(1);
+            
+            if (voltage !== null) {
+                document.getElementById(`${prefix}-voltage-row`).style.display = 'inline-flex';
+                document.getElementById(`${prefix}-voltage`).innerText = voltage.toFixed(1);
+            } else {
+                document.getElementById(`${prefix}-voltage-row`).style.display = 'none';
+            }
 
             const btn = document.getElementById(`btn-${prefix}`);
             const card = document.getElementById(`card-${prefix}`);
@@ -318,18 +350,13 @@
             }
         }
 
-        // --- Главный цикл (Строгая очередь запросов) ---
         let isUpdating = false;
 
         async function syncAllDevices() {
-            if (isUpdating) return; // Защита от наложения запросов
+            if (isUpdating) return;
             isUpdating = true;
 
             try {
-                // Запросы идут СТРОГО друг за другом, чтобы прокси не блокировал
-                const climateRes = await fetchShellyStatus(HT_DEVICE_ID);
-                updateClimateUI(climateRes);
-
                 const pumpRes = await fetchShellyStatus(PUMP_DEVICE_ID);
                 updatePumpUI(pumpRes);
 
@@ -338,6 +365,9 @@
 
                 const ev2Res = await fetchShellyStatus('b0b21c0f6728');
                 updateRelayUI(ev2Res, 'ev2');
+                
+                const climateRes = await fetchShellyStatus(HT_DEVICE_ID);
+                updateClimateUI(climateRes);
 
             } catch (e) {
                 console.error("Сбой синхронизации:", e);
@@ -346,13 +376,11 @@
             }
         }
 
-        // --- Управление кнопками ---
         async function toggleRelay(deviceId, prefix) {
             const btn = document.getElementById(`btn-${prefix}`);
             const isCurrentlyOn = btn.classList.contains('on');
             const command = isCurrentlyOn ? 'off' : 'on';
             
-            // Визуальный отклик (сразу меняем цвет кнопки)
             const card = document.getElementById(`card-${prefix}`);
             if (command === 'on') {
                 btn.className = 'power-btn on'; card.classList.add('active');
@@ -367,15 +395,14 @@
                     method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: `id=${deviceId}&auth_key=${AUTH_KEY}&channel=0&turn=${command}`
                 });
-                // Запрашиваем новые данные чуть погодя
+                
                 setTimeout(syncAllDevices, 1500);
             } catch (error) {
                 console.error("Ошибка при нажатии:", error);
-                syncAllDevices(); // Откат при ошибке
+                syncAllDevices();
             }
         }
 
-        // Запускаем первую синхронизацию и ставим таймер (каждые 12 секунд)
         syncAllDevices();
         setInterval(syncAllDevices, 12000); 
     </script>
