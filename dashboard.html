@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mökki Dashboard</title>
+    <style>
+        /* Темная тема в стиле Shelly Cloud */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #1a1e23; /* Темный фон */
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #e0e6ed;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            text-align: left;
+            width: 100%;
+            max-width: 600px;
+            border-bottom: 1px solid #2c343e;
+            padding-bottom: 10px;
+        }
+
+        .dashboard-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            width: 100%;
+            max-width: 600px;
+            justify-content: center;
+        }
+
+        /* Карточка устройства */
+        .device-card {
+            background-color: #2b3038; /* Цвет карточки */
+            border-radius: 16px;
+            padding: 20px;
+            width: 200px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .device-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .device-subtitle {
+            font-size: 0.8rem;
+            color: #8fa0b3;
+            margin-bottom: 20px;
+        }
+
+        /* Блок с показаниями */
+        .sensor-data {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #21252b;
+            border-radius: 12px;
+            box-sizing: border-box;
+        }
+
+        .sensor-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .sensor-icon {
+            opacity: 0.7;
+        }
+
+        /* Крупная температура внизу (как на скрине) */
+        .temp-badge {
+            background-color: #353b45;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .update-time {
+            font-size: 0.7rem;
+            color: #6c7a8c;
+            margin-top: 15px;
+        }
+        
+        .error-msg {
+            color: #ff6b6b;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Mökki</h1>
+
+    <div class="dashboard-container">
+        
+        <div class="device-card">
+            <div class="device-title">MÖKKI klimat</div>
+            <div class="device-subtitle">Mökki Kuusamo</div>
+
+            <div class="sensor-data">
+                <div class="sensor-item" title="Влажность">
+                    <span class="sensor-icon">💧</span>
+                    <span id="ht-humidity">--%</span>
+                </div>
+                <div class="sensor-item" title="Батарея">
+                    <span class="sensor-icon">🔋</span>
+                    <span id="ht-battery">--%</span>
+                </div>
+            </div>
+
+            <div class="temp-badge">
+                <span class="sensor-icon">🌡️</span>
+                <span id="ht-temp">-- °C</span>
+            </div>
+
+            <div id="ht-error" class="error-msg">Ошибка связи</div>
+            <div class="update-time" id="ht-updated">Синхронизация...</div>
+        </div>
+
+    </div>
+
+    <script>
+        // Твои доступы к Shelly Cloud
+        const AUTH_KEY = "MWEzMWI0dWlk07E8AECF7EC066046A87D6410853E336FBB1D6F260B8376F3C047EE699E8019EA03F97657F6EF690";
+        const HT_DEVICE_ID = "c9f4e3"; // ID твоего датчика H&T
+
+        async function updateClimateData() {
+            try {
+                // Обращаемся к API Shelly Cloud за статусом устройства
+                const targetUrl = 'https://shelly-70-eu.shelly.cloud/device/status';
+                const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
+                
+                const requestBody = `id=${HT_DEVICE_ID}&auth_key=${AUTH_KEY}`;
+
+                const response = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: requestBody
+                });
+
+                const res = await response.json();
+
+                if (res.isok) {
+                    document.getElementById('ht-error').style.display = 'none';
+
+                    // Разбираем данные от Shelly H&T
+                    const status = res.data.device_status;
+                    
+                    // Температура
+                    if (status.tmp && status.tmp.value !== undefined) {
+                        document.getElementById('ht-temp').innerText = `${status.tmp.value.toFixed(1)} °C`;
+                    }
+                    
+                    // Влажность
+                    if (status.hum && status.hum.value !== undefined) {
+                        document.getElementById('ht-humidity').innerText = `${status.hum.value.toFixed(1)}%`;
+                    }
+                    
+                    // Батарея (для H&T очень важно!)
+                    if (status.bat && status.bat.value !== undefined) {
+                        document.getElementById('ht-battery').innerText = `${status.bat.value}%`;
+                    }
+
+                    // Время последнего отклика от датчика
+                    document.getElementById('ht-updated').innerText = `Обновлено: ${new Date().toLocaleTimeString()}`;
+                } else {
+                    throw new Error("Shelly API returned error");
+                }
+            } catch (error) {
+                console.error("Ошибка обновления климата:", error);
+                document.getElementById('ht-error').style.display = 'block';
+                document.getElementById('ht-updated').innerText = "Ожидание данных...";
+            }
+        }
+
+        // Запускаем сразу и потом раз в минуту
+        updateClimateData();
+        setInterval(updateClimateData, 60000); 
+    </script>
+</body>
+</html>
