@@ -214,7 +214,7 @@
                     <div class="relay-name">EV lataus (Outlander)</div>
                     <div class="relay-stats">
                         <span><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev1-power">0.0</span> W</span>
-                        <span id="ev1-voltage-row" style="display: none;"><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev1-voltage">0.0</span> V</span>
+                        <span id="ev1-voltage-row"><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev1-voltage">0.0</span> V</span>
                     </div>
                 </div>
             </div>
@@ -230,7 +230,7 @@
                     <div class="relay-name">EV lataus (e-Up)</div>
                     <div class="relay-stats">
                         <span><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev2-power">0.0</span> W</span>
-                        <span id="ev2-voltage-row" style="display: none;"><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev2-voltage">0.0</span> V</span>
+                        <span id="ev2-voltage-row"><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev2-voltage">0.0</span> V</span>
                     </div>
                 </div>
             </div>
@@ -256,15 +256,13 @@
             return await response.json();
         }
 
-        // Универсальный глубокий парсер для любых версий Shelly
+        // Парсинг 
         function extractRelayData(status) {
             let power = 0, voltage = null, isOn = false;
 
-            // 1. Статус ВКЛ/ВЫКЛ
             if (status.relays && status.relays.length > 0) isOn = status.relays[0].ison;
             else if (status['switch:0'] && status['switch:0'].output !== undefined) isOn = status['switch:0'].output;
             
-            // 2. Мощность и напряжение
             if (status.meters && status.meters.length > 0) {
                 power = status.meters[0].power || 0;
                 if (status.meters[0].voltage !== undefined) voltage = status.meters[0].voltage;
@@ -281,15 +279,10 @@
             return { power, voltage, isOn };
         }
 
-        function getErrorText(res) {
-            if (res.errors && res.errors.invalid_header) return "Неверный ключ";
-            if (res.errors) return Object.values(res.errors)[0] || "Оффлайн";
-            return "Ошибка связи";
-        }
-
+        // UI функции (теперь они не ломают друг друга)
         function updateClimateUI(res) {
             if (!res.isok) {
-                document.getElementById('ht-updated').innerHTML = `<span class="error-text">${getErrorText(res)}</span>`;
+                document.getElementById('ht-updated').innerHTML = `<span class="error-text">Ожидание сети...</span>`;
                 return;
             }
             const status = res.data.device_status;
@@ -299,20 +292,14 @@
         }
 
         function updatePumpUI(res) {
-            if (!res.isok) {
-                document.getElementById('ilp-updated').innerHTML = `<span class="error-text">${getErrorText(res)}</span>`;
-                return;
-            }
+            if (!res.isok) return;
             const { power, voltage, isOn } = extractRelayData(res.data.device_status);
             
             document.getElementById('ilp-power').innerText = power.toFixed(1);
             
-            // Адаптивное напряжение: скрываем, если прибор его не измеряет
             if (voltage !== null) {
                 document.getElementById('ilp-voltage-row').style.display = 'flex';
                 document.getElementById('ilp-voltage').innerText = voltage.toFixed(1);
-            } else {
-                document.getElementById('ilp-voltage-row').style.display = 'none';
             }
 
             document.getElementById('ilp-updated').innerText = `Обновлено: ${new Date().toLocaleTimeString()}`;
@@ -326,19 +313,14 @@
         }
 
         function updateRelayUI(res, prefix) {
-            if (!res.isok) {
-                console.error(`Ошибка реле ${prefix}:`, res);
-                return;
-            }
+            if (!res.isok) return; // Если ошибка - просто не трогаем интерфейс, оставляем старые значения
             const { power, voltage, isOn } = extractRelayData(res.data.device_status);
             
             document.getElementById(`${prefix}-power`).innerText = power.toFixed(1);
             
+            // Если напряжение пришло - обновляем. Если нет - просто не трогаем.
             if (voltage !== null) {
-                document.getElementById(`${prefix}-voltage-row`).style.display = 'inline-flex';
                 document.getElementById(`${prefix}-voltage`).innerText = voltage.toFixed(1);
-            } else {
-                document.getElementById(`${prefix}-voltage-row`).style.display = 'none';
             }
 
             const btn = document.getElementById(`btn-${prefix}`);
@@ -350,32 +332,41 @@
             }
         }
 
+        // НОВЫЙ ДВИЖОК ОПРОСА (Независимый)
         let isUpdating = false;
 
         async function syncAllDevices() {
             if (isUpdating) return;
             isUpdating = true;
 
-            try {
-                const pumpRes = await fetchShellyStatus(PUMP_DEVICE_ID);
-                updatePumpUI(pumpRes);
+            // Массив наших устройств для опроса
+            const devices = [
+                { id: PUMP_DEVICE_ID, ui: updatePumpUI, type: 'pump' },
+                { id: '08b61f69c128', ui: updateRelayUI, type: 'ev1' },
+                { id: 'b0b21c0f6728', ui: updateRelayUI, type: 'ev2' },
+                { id: HT_DEVICE_ID, ui: updateClimateUI, type: 'climate' }
+            ];
 
-                const ev1Res = await fetchShellyStatus('08b61f69c128');
-                updateRelayUI(ev1Res, 'ev1');
-
-                const ev2Res = await fetchShellyStatus('b0b21c0f6728');
-                updateRelayUI(ev2Res, 'ev2');
-                
-                const climateRes = await fetchShellyStatus(HT_DEVICE_ID);
-                updateClimateUI(climateRes);
-
-            } catch (e) {
-                console.error("Сбой синхронизации:", e);
-            } finally {
-                isUpdating = false;
+            // Опрашиваем по очереди с паузой, чтобы прокси не блокировал
+            for (const dev of devices) {
+                try {
+                    const res = await fetchShellyStatus(dev.id);
+                    if (dev.type.startsWith('ev')) dev.ui(res, dev.type);
+                    else dev.ui(res);
+                } catch (e) {
+                    console.error(`Ошибка при опросе ${dev.id}:`, e);
+                    if (dev.type === 'climate') {
+                        document.getElementById('ht-updated').innerHTML = `<span class="error-text">Ожидание прокси...</span>`;
+                    }
+                }
+                // Микро-пауза перед следующим запросом
+                await new Promise(r => setTimeout(r, 400));
             }
+
+            isUpdating = false;
         }
 
+        // Кнопки Вкл/Выкл
         async function toggleRelay(deviceId, prefix) {
             const btn = document.getElementById(`btn-${prefix}`);
             const isCurrentlyOn = btn.classList.contains('on');
@@ -396,15 +387,17 @@
                     body: `id=${deviceId}&auth_key=${AUTH_KEY}&channel=0&turn=${command}`
                 });
                 
-                setTimeout(syncAllDevices, 1500);
+                setTimeout(() => {
+                    fetchShellyStatus(deviceId).then(res => updateRelayUI(res, prefix));
+                }, 1500);
             } catch (error) {
                 console.error("Ошибка при нажатии:", error);
-                syncAllDevices();
             }
         }
 
+        // Увеличили интервал до 15 секунд для стабильности
         syncAllDevices();
-        setInterval(syncAllDevices, 12000); 
+        setInterval(syncAllDevices, 15000); 
     </script>
 </body>
 </html>
