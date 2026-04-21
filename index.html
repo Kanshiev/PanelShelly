@@ -4,37 +4,80 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Shelly - Дом</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #16181c; color: #ffffff; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        h1 { color: #ffffff; font-size: 1.5rem; margin-bottom: 20px; text-align: left; width: 100%; max-width: 600px; border-bottom: 1px solid #2c3036; padding-bottom: 15px; }
-        .dashboard-container { display: flex; flex-wrap: wrap; gap: 15px; width: 100%; max-width: 600px; justify-content: center; }
+        /* Темная тема Shelly Cloud */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #16181c; color: #ffffff; margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        h1 {
+            color: #ffffff; font-size: 1.6rem; margin-bottom: 20px; text-align: left;
+            width: 100%; max-width: 1000px; border-bottom: 1px solid #2c3036; padding-bottom: 10px;
+        }
+
+        /* --- Планшетный Layout (Две колонки) --- */
+        .layout-wrapper {
+            display: flex; gap: 30px; width: 100%; max-width: 1000px; align-items: flex-start;
+        }
         
-        .device-card { background-color: #272a31; border-radius: 12px; padding: 20px; width: 220px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: flex; flex-direction: column; align-items: center; }
-        .device-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 5px; text-align: center; }
-        .device-subtitle { font-size: 0.75rem; color: #8b929c; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .column { flex: 1; display: flex; flex-direction: column; gap: 15px; min-width: 320px; }
         
-        .sensor-data { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 10px; padding: 10px; background-color: #1e2025; border-radius: 10px; box-sizing: border-box; }
-        .sensor-item { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; font-weight: 600; color: #e0e6ed; }
-        .sensor-icon { display: flex; align-items: center; color: #6db1ff; }
-        
-        .temp-badge { background-color: #31363f; padding: 10px 20px; border-radius: 20px; font-size: 1.4rem; font-weight: bold; display: flex; align-items: center; gap: 10px; margin-top: 5px; }
-        .temp-badge .sensor-icon { color: #ff6b8b; }
-        
-        .status-badge { font-size: 0.85rem; padding: 6px 16px; border-radius: 12px; font-weight: 600; margin-top: 10px; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1px; }
-        .status-badge.on { background-color: rgba(0, 123, 255, 0.2); color: #6db1ff; border: 1px solid #007bff; }
-        .status-badge.off { background-color: #1e2025; color: #8b929c; border: 1px solid transparent; }
-        
-        .update-time { font-size: 0.7rem; color: #5a6069; margin-top: 15px; text-align: center;}
-        .error-text { color: #ff6b8b; font-weight: bold; }
-        .unit { font-size: 0.85rem; color: #8b929c; margin-left: 2px; }
-        
-        .section-title { color: #8b929c; font-size: 0.85rem; width: 100%; max-width: 600px; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; margin-bottom: -5px; padding-left: 5px; box-sizing: border-box; }
-        .relays-container { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
-        .light-group { display: flex; flex-direction: column; gap: 6px; }
-        
-        .relay-card { background-color: #272a31; border-radius: 12px; padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: all 0.3s ease; border: 2px solid transparent; }
+        .divider { width: 2px; background: #2c3036; border-radius: 1px; align-self: stretch; margin: 10px 0; }
+
+        /* Адаптация под телефон (сворачивание в 1 колонку) */
+        @media (max-width: 800px) {
+            .layout-wrapper { flex-direction: column; align-items: center; gap: 20px; }
+            .column { width: 100%; max-width: 500px; }
+            .divider { width: 100%; height: 2px; margin: 5px 0; }
+        }
+
+        .section-title {
+            color: #8b929c; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; 
+            margin-top: 5px; margin-bottom: -5px; padding-left: 5px;
+        }
+
+        /* --- Карточки --- */
+        .relay-card {
+            background-color: #272a31; border-radius: 12px; padding: 12px 15px; display: flex; align-items: center; 
+            justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: all 0.3s ease; border: 2px solid transparent;
+        }
         .relay-card.active { border: 2px solid #007bff; background-color: #212833; }
         .relay-left { display: flex; align-items: flex-start; gap: 15px; flex-grow: 1; }
+        
+        /* Квадратные карточки (Климат/Насос) */
+        .squares-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .device-card {
+            background-color: #272a31; border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+        }
+        .device-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 2px; text-align: center; }
+        .device-subtitle { font-size: 0.7rem; color: #8b929c; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;}
+
+        .sensor-data { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 8px; padding: 8px; background-color: #1e2025; border-radius: 8px; box-sizing: border-box; }
+        .sensor-item { display: flex; align-items: center; gap: 8px; font-size: 1.05rem; font-weight: 600; color: #e0e6ed; }
+        .sensor-icon { display: flex; align-items: center; color: #6db1ff; }
+        
+        .temp-badge { background-color: #31363f; padding: 8px 15px; border-radius: 15px; font-size: 1.3rem; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+        .temp-badge .sensor-icon { color: #ff6b8b; }
+        
+        .status-badge { font-size: 0.8rem; padding: 6px 14px; border-radius: 12px; font-weight: 600; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .status-badge.on { background-color: rgba(0, 123, 255, 0.2); color: #6db1ff; border: 1px solid #007bff; }
+        .status-badge.off { background-color: #1e2025; color: #8b929c; border: 1px solid transparent; }
+
+        /* Виджет Цены */
+        .price-card { background-color: #272a31; border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
+        .price-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .price-title { font-size: 0.9rem; font-weight: bold; color: #8b929c; text-transform: uppercase; }
+        .price-current { font-size: 1.8rem; font-weight: 900; color: #fff; display: flex; align-items: baseline; gap: 4px; }
+        .price-chart-wrapper { height: 70px; width: 100%; position: relative; margin-top: 5px; }
+
+        .update-time { font-size: 0.65rem; color: #5a6069; margin-top: 10px; text-align: center;}
+        .unit { font-size: 0.8rem; color: #8b929c; margin-left: 2px; }
         
         .relay-device-icon { width: 44px; height: 44px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border: 2px solid #1a1c21; box-shadow: inset 0 0 10px rgba(0,0,0,0.3); color: #ffffff; }
         .icon-ev { background-color: #92313b; }
@@ -46,6 +89,8 @@
         .relay-stats span { display: flex; align-items: center; gap: 4px; }
         .relay-stats .sensor-icon { width: 12px; height: 12px; color: #8b929c; }
         
+        /* Ползунки и кнопки */
+        .light-group { display: flex; flex-direction: column; gap: 6px; }
         .dimmer-slider { -webkit-appearance: none; width: 95%; height: 6px; background: #1e2025; border-radius: 4px; outline: none; margin-top: 8px; margin-bottom: 5px; }
         .dimmer-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #6db1ff; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
         .master-slider::-webkit-slider-thumb { background: #f1c40f; width: 22px; height: 22px; }
@@ -56,7 +101,7 @@
         .power-btn.on { background-color: #007bff; color: #ffffff; box-shadow: 0 0 15px rgba(0, 123, 255, 0.4); }
         
         .presets-row { display: flex; gap: 8px; width: 100%; margin: 8px 0; }
-        .preset-btn { flex: 1; padding: 14px 0; border-radius: 12px; border: none; background-color: #272a31; color: #e0e6ed; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .preset-btn { flex: 1; padding: 12px 0; border-radius: 12px; border: none; background-color: #272a31; color: #e0e6ed; font-weight: 800; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         .preset-btn:active { transform: scale(0.95); }
         .preset-btn.btn-off { background-color: #3b2025; color: #ff6b8b; border: 1px solid #5a2b34; }
         .preset-btn.btn-max { background-color: #1e3a5f; color: #6db1ff; border: 1px solid #007bff; }
@@ -75,121 +120,135 @@
 
     <h1>Мой дом</h1>
 
-    <div class="dashboard-container">
-        <div class="device-card">
-            <div class="device-title">КЛИМАТ ДОМА</div>
-            <div class="device-subtitle">Гостиная</div>
-            <div class="sensor-data"><div class="sensor-item"><span class="sensor-icon"><svg width="20" height="20"><use href="#icon-drop"></use></svg></span><span id="ht-humidity">--.-</span><span class="unit">%</span></div></div>
-            <div class="temp-badge"><span class="sensor-icon"><svg width="24" height="24"><use href="#icon-temp"></use></svg></span><span id="ht-temp">--.-</span><span class="unit" style="color: #fff;">°C</span></div>
-            <div class="update-time" id="ht-updated">Синхронизация...</div>
-        </div>
-        <div class="device-card">
-            <div class="device-title">ILP koti</div>
-            <div class="device-subtitle">Большая комната</div>
-            <div class="sensor-data"><div class="sensor-item"><span class="sensor-icon"><svg width="18" height="18"><use href="#icon-lightning"></use></svg></span><span id="ilp-power">0.0</span> <span class="unit">W</span></div></div>
-            <div class="sensor-data" id="ilp-voltage-row" style="display: none;"><div class="sensor-item"><span class="sensor-icon"><svg width="18" height="18"><use href="#icon-lightning"></use></svg></span><span id="ilp-voltage">0.0</span> <span class="unit">V</span></div></div>
-            <div id="ilp-badge" class="status-badge off">ОЖИДАНИЕ</div>
-            <div class="update-time" id="ilp-updated">Синхронизация...</div>
-        </div>
-    </div>
-
-    <div class="section-title">Зарядка авто</div>
-    <div class="relays-container" style="margin-top: 5px;">
-        <div class="relay-card" id="card-ev1">
-            <div class="relay-left">
-                <div class="relay-device-icon icon-ev"><svg width="24" height="24"><use href="#icon-lightning"></use></svg></div>
-                <div class="relay-info">
-                    <div class="relay-name">EV lataus (Outlander)</div>
-                    <div class="relay-stats"><span><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev1-power">0.0</span> W</span><span id="ev1-voltage-row"><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev1-voltage">0.0</span> V</span></div>
-                </div>
-            </div>
-            <button class="power-btn off" id="btn-ev1" onclick="toggleDevice('08b61f69c128', 'ev1', 'relay')"><svg><use href="#icon-power"></use></svg></button>
-        </div>
-        <div class="relay-card" id="card-ev2">
-            <div class="relay-left">
-                <div class="relay-device-icon icon-ev"><svg width="24" height="24"><use href="#icon-lightning"></use></svg></div>
-                <div class="relay-info">
-                    <div class="relay-name">EV lataus (e-Up)</div>
-                    <div class="relay-stats"><span><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev2-power">0.0</span> W</span><span id="ev2-voltage-row"><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev2-voltage">0.0</span> V</span></div>
-                </div>
-            </div>
-            <button class="power-btn off" id="btn-ev2" onclick="toggleDevice('b0b21c0f6728', 'ev2', 'relay')"><svg><use href="#icon-power"></use></svg></button>
-        </div>
-    </div>
-
-    <div class="section-title" style="margin-top: 20px;">Освещение</div>
-    <div class="relays-container" style="margin-top: 5px;">
+    <div class="layout-wrapper">
         
-        <div class="light-group">
-            <div class="relay-card" style="padding: 15px; display: flex; flex-direction: column; align-items: center;">
-                <div style="width: 100%; display: flex; justify-content: space-between; font-size: 0.9rem; color: #8b929c; font-weight: bold; margin-bottom: 5px;">
-                    <span style="display:flex; align-items:center; gap:6px;"><svg width="16" height="16" style="color:#f1c40f;"><use href="#icon-sun"></use></svg> ОБЩАЯ ЯРКОСТЬ</span>
-                    <span id="br-master" style="color:#f1c40f;">--%</span>
+        <div class="column">
+            <div class="section-title">Освещение</div>
+            
+            <div class="light-group">
+                <div class="relay-card" style="padding: 15px; display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 100%; display: flex; justify-content: space-between; font-size: 0.9rem; color: #8b929c; font-weight: bold; margin-bottom: 5px;">
+                        <span style="display:flex; align-items:center; gap:6px;"><svg width="16" height="16" style="color:#f1c40f;"><use href="#icon-sun"></use></svg> ОБЩАЯ ЯРКОСТЬ</span>
+                        <span id="br-master" style="color:#f1c40f;">--%</span>
+                    </div>
+                    <input type="range" min="1" max="100" value="0" class="dimmer-slider master-slider" id="slider-master"
+                           onchange="setMasterBrightness(this.value)" oninput="lockUIAndPreview('master', this.value)">
                 </div>
-                <input type="range" min="1" max="100" value="0" class="dimmer-slider master-slider" id="slider-master"
-                       onchange="setMasterBrightness(this.value)"
-                       oninput="lockUIAndPreview('master', this.value)">
+
+                <div class="relay-card" id="card-light1">
+                    <div class="relay-left">
+                        <div class="relay-device-icon icon-light"><svg width="24" height="24"><use href="#icon-bulb"></use></svg></div>
+                        <div class="relay-info">
+                            <div class="relay-name">Кухня мягкий 1</div>
+                            <div class="relay-stats" style="margin-top: 3px;"><span style="color: #6db1ff;"><span class="sensor-icon" style="color: #6db1ff;"><svg><use href="#icon-sun"></use></svg></span> <span id="br-light1">0%</span></span></div>
+                            <input type="range" min="1" max="100" value="0" class="dimmer-slider" id="slider-light1" onchange="setBrightness('98cdac2d2465', 'light1', this.value)" oninput="lockUIAndPreview('light1', this.value)">
+                        </div>
+                    </div>
+                    <button class="power-btn off" id="btn-light1" onclick="toggleDevice('98cdac2d2465', 'light1', 'light')"><svg><use href="#icon-power"></use></svg></button>
+                </div>
+
+                <div class="relay-card" id="card-light2">
+                    <div class="relay-left">
+                        <div class="relay-device-icon icon-light"><svg width="24" height="24"><use href="#icon-bulb"></use></svg></div>
+                        <div class="relay-info">
+                            <div class="relay-name">Кухня мягкий 2</div>
+                            <div class="relay-stats" style="margin-top: 3px;"><span style="color: #6db1ff;"><span class="sensor-icon" style="color: #6db1ff;"><svg><use href="#icon-sun"></use></svg></span> <span id="br-light2">0%</span></span></div>
+                            <input type="range" min="1" max="100" value="0" class="dimmer-slider" id="slider-light2" onchange="setBrightness('349454777f7a', 'light2', this.value)" oninput="lockUIAndPreview('light2', this.value)">
+                        </div>
+                    </div>
+                    <button class="power-btn off" id="btn-light2" onclick="toggleDevice('349454777f7a', 'light2', 'light')"><svg><use href="#icon-power"></use></svg></button>
+                </div>
+
+                <div class="relay-card" id="card-light3">
+                    <div class="relay-left">
+                        <div class="relay-device-icon icon-light"><svg width="24" height="24"><use href="#icon-bulb"></use></svg></div>
+                        <div class="relay-info">
+                            <div class="relay-name">Кухня мягкий 3</div>
+                            <div class="relay-stats" style="margin-top: 3px;"><span style="color: #6db1ff;"><span class="sensor-icon" style="color: #6db1ff;"><svg><use href="#icon-sun"></use></svg></span> <span id="br-light3">0%</span></span></div>
+                            <input type="range" min="1" max="100" value="0" class="dimmer-slider" id="slider-light3" onchange="setBrightness('98cdac2c88f4', 'light3', this.value)" oninput="lockUIAndPreview('light3', this.value)">
+                        </div>
+                    </div>
+                    <button class="power-btn off" id="btn-light3" onclick="toggleDevice('98cdac2c88f4', 'light3', 'light')"><svg><use href="#icon-power"></use></svg></button>
+                </div>
             </div>
 
-            <div class="relay-card" id="card-light1">
-                <div class="relay-left">
-                    <div class="relay-device-icon icon-light"><svg width="24" height="24"><use href="#icon-bulb"></use></svg></div>
-                    <div class="relay-info">
-                        <div class="relay-name">Кухня мягкий 1</div>
-                        <div class="relay-stats" style="margin-top: 3px;"><span style="color: #6db1ff;"><span class="sensor-icon" style="color: #6db1ff;"><svg><use href="#icon-sun"></use></svg></span> <span id="br-light1">0%</span></span></div>
-                        <input type="range" min="1" max="100" value="0" class="dimmer-slider" id="slider-light1" 
-                               onchange="setBrightness('98cdac2d2465', 'light1', this.value)" 
-                               oninput="lockUIAndPreview('light1', this.value)">
-                    </div>
-                </div>
-                <button class="power-btn off" id="btn-light1" onclick="toggleDevice('98cdac2d2465', 'light1', 'light')"><svg><use href="#icon-power"></use></svg></button>
+            <div class="presets-row">
+                <button class="preset-btn btn-off" onclick="executePreset('OFF')">OFF</button>
+                <button class="preset-btn" onclick="executePreset('30')">30%</button>
+                <button class="preset-btn" onclick="executePreset('60')">60%</button>
+                <button class="preset-btn" onclick="executePreset('100')">100%</button>
+                <button class="preset-btn btn-max" onclick="executePreset('MAX')">MAX</button>
             </div>
 
-            <div class="relay-card" id="card-light2">
-                <div class="relay-left">
+            <div class="relay-card" id="card-light4">
+                <div class="relay-left" style="align-items: center;">
                     <div class="relay-device-icon icon-light"><svg width="24" height="24"><use href="#icon-bulb"></use></svg></div>
-                    <div class="relay-info">
-                        <div class="relay-name">Кухня мягкий 2</div>
-                        <div class="relay-stats" style="margin-top: 3px;"><span style="color: #6db1ff;"><span class="sensor-icon" style="color: #6db1ff;"><svg><use href="#icon-sun"></use></svg></span> <span id="br-light2">0%</span></span></div>
-                        <input type="range" min="1" max="100" value="0" class="dimmer-slider" id="slider-light2" 
-                               onchange="setBrightness('349454777f7a', 'light2', this.value)" 
-                               oninput="lockUIAndPreview('light2', this.value)">
-                    </div>
+                    <div class="relay-info"><div class="relay-name">Свет верх</div></div>
                 </div>
-                <button class="power-btn off" id="btn-light2" onclick="toggleDevice('349454777f7a', 'light2', 'light')"><svg><use href="#icon-power"></use></svg></button>
-            </div>
-
-            <div class="relay-card" id="card-light3">
-                <div class="relay-left">
-                    <div class="relay-device-icon icon-light"><svg width="24" height="24"><use href="#icon-bulb"></use></svg></div>
-                    <div class="relay-info">
-                        <div class="relay-name">Кухня мягкий 3</div>
-                        <div class="relay-stats" style="margin-top: 3px;"><span style="color: #6db1ff;"><span class="sensor-icon" style="color: #6db1ff;"><svg><use href="#icon-sun"></use></svg></span> <span id="br-light3">0%</span></span></div>
-                        <input type="range" min="1" max="100" value="0" class="dimmer-slider" id="slider-light3" 
-                               onchange="setBrightness('98cdac2c88f4', 'light3', this.value)" 
-                               oninput="lockUIAndPreview('light3', this.value)">
-                    </div>
-                </div>
-                <button class="power-btn off" id="btn-light3" onclick="toggleDevice('98cdac2c88f4', 'light3', 'light')"><svg><use href="#icon-power"></use></svg></button>
+                <button class="power-btn off" id="btn-light4" onclick="toggleDevice('441793a671e8', 'light4', 'relay')"><svg><use href="#icon-power"></use></svg></button>
             </div>
         </div>
 
-        <div class="presets-row">
-            <button class="preset-btn btn-off" onclick="executePreset('OFF')">OFF</button>
-            <button class="preset-btn" onclick="executePreset('30')">30%</button>
-            <button class="preset-btn" onclick="executePreset('60')">60%</button>
-            <button class="preset-btn" onclick="executePreset('100')">100%</button>
-            <button class="preset-btn btn-max" onclick="executePreset('MAX')">MAX</button>
-        </div>
+        <div class="divider"></div>
 
-        <div class="relay-card" id="card-light4">
-            <div class="relay-left" style="align-items: center;">
-                <div class="relay-device-icon icon-light"><svg width="24" height="24"><use href="#icon-bulb"></use></svg></div>
-                <div class="relay-info"><div class="relay-name">Свет верх</div></div>
+        <div class="column">
+            
+            <div class="section-title">Сводка</div>
+            
+            <div class="squares-grid">
+                <div class="device-card">
+                    <div class="device-title">КЛИМАТ ДОМА</div>
+                    <div class="device-subtitle">Гостиная</div>
+                    <div class="sensor-data"><div class="sensor-item"><span class="sensor-icon"><svg width="20" height="20"><use href="#icon-drop"></use></svg></span><span id="ht-humidity">--.-</span><span class="unit">%</span></div></div>
+                    <div class="temp-badge"><span class="sensor-icon"><svg width="24" height="24"><use href="#icon-temp"></use></svg></span><span id="ht-temp">--.-</span><span class="unit" style="color: #fff;">°C</span></div>
+                    <div class="update-time" id="ht-updated">Синхронизация...</div>
+                </div>
+                
+                <div class="device-card">
+                    <div class="device-title">ILP koti</div>
+                    <div class="device-subtitle">Большая комната</div>
+                    <div class="sensor-data"><div class="sensor-item"><span class="sensor-icon"><svg width="18" height="18"><use href="#icon-lightning"></use></svg></span><span id="ilp-power">0.0</span> <span class="unit">W</span></div></div>
+                    <div class="sensor-data" id="ilp-voltage-row" style="display: none;"><div class="sensor-item"><span class="sensor-icon"><svg width="18" height="18"><use href="#icon-lightning"></use></svg></span><span id="ilp-voltage">0.0</span> <span class="unit">V</span></div></div>
+                    <div id="ilp-badge" class="status-badge off">ОЖИДАНИЕ</div>
+                    <div class="update-time" id="ilp-updated">Синхронизация...</div>
+                </div>
             </div>
-            <button class="power-btn off" id="btn-light4" onclick="toggleDevice('441793a671e8', 'light4', 'relay')"><svg><use href="#icon-power"></use></svg></button>
-        </div>
 
+            <div class="price-card">
+                <div class="price-header">
+                    <div class="price-title">Цена сейчас</div>
+                    <div class="price-current"><span id="spot-price">--</span><span class="unit">c</span></div>
+                </div>
+                <div class="price-chart-wrapper">
+                    <canvas id="miniPriceChart"></canvas>
+                </div>
+            </div>
+
+            <div class="section-title" style="margin-top: 5px;">Зарядка авто</div>
+            
+            <div class="relay-card" id="card-ev1">
+                <div class="relay-left">
+                    <div class="relay-device-icon icon-ev"><svg width="24" height="24"><use href="#icon-lightning"></use></svg></div>
+                    <div class="relay-info">
+                        <div class="relay-name">EV lataus (Outlander)</div>
+                        <div class="relay-stats"><span><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev1-power">0.0</span> W</span><span id="ev1-voltage-row"><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev1-voltage">0.0</span> V</span></div>
+                    </div>
+                </div>
+                <button class="power-btn off" id="btn-ev1" onclick="toggleDevice('08b61f69c128', 'ev1', 'relay')"><svg><use href="#icon-power"></use></svg></button>
+            </div>
+            
+            <div class="relay-card" id="card-ev2">
+                <div class="relay-left">
+                    <div class="relay-device-icon icon-ev"><svg width="24" height="24"><use href="#icon-lightning"></use></svg></div>
+                    <div class="relay-info">
+                        <div class="relay-name">EV lataus (e-Up)</div>
+                        <div class="relay-stats"><span><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev2-power">0.0</span> W</span><span id="ev2-voltage-row"><span class="sensor-icon"><svg><use href="#icon-lightning"></use></svg></span> <span id="ev2-voltage">0.0</span> V</span></div>
+                    </div>
+                </div>
+                <button class="power-btn off" id="btn-ev2" onclick="toggleDevice('b0b21c0f6728', 'ev2', 'relay')"><svg><use href="#icon-power"></use></svg></button>
+            </div>
+
+        </div>
     </div>
 
     <script>
@@ -204,26 +263,68 @@
         ];
         const TOP_LIGHT = { id: '441793a671e8', prefix: 'light4' };
 
-        // Блокираторы и таймеры
+        // -------------------------
+        // ВИДЖЕТ ЦЕНЫ НА ЭЛЕКТРИЧЕСТВО
+        // -------------------------
+        let priceChart = null;
+        async function fetchSpotPrice() {
+            try {
+                const res = await fetch('https://api.spot-hinta.fi/TodayAndDayForward');
+                const data = await res.json();
+                const now = new Date();
+                const quarter = Math.floor(now.getMinutes() / 15) * 15;
+                const refTime = new Date(now); refTime.setMinutes(quarter, 0, 0);
+                const searchStr = refTime.toLocaleString('sv-SE').replace(' ', 'T').substring(0, 16);
+                const startIndex = data.findIndex(s => s.DateTime.includes(searchStr));
+
+                if (startIndex !== -1) {
+                    // Текущая цена
+                    const currentPrice = (data[startIndex].PriceWithTax * 100).toFixed(1);
+                    document.getElementById('spot-price').innerText = currentPrice;
+
+                    // График на 3 часа (12 интервалов по 15 мин)
+                    const chartData = data.slice(startIndex, startIndex + 12);
+                    const prices = chartData.map(s => parseFloat((s.PriceWithTax * 100).toFixed(1)));
+                    
+                    const FREE = 2, CHEAP = 5, HIGH = 10;
+                    const colors = prices.map(p => p < FREE ? '#00d1db' : p < CHEAP ? '#95d5b2' : p < HIGH ? '#f1c40f' : '#ff6b8b');
+
+                    if (priceChart) priceChart.destroy();
+                    const ctx = document.getElementById('miniPriceChart').getContext('2d');
+                    priceChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: Array(12).fill(''), // Без подписей
+                            datasets: [{ data: prices, backgroundColor: colors, borderRadius: 4, barPercentage: 0.9 }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                            scales: { x: { display: false }, y: { display: false } },
+                            animation: { duration: 0 }
+                        }
+                    });
+                }
+            } catch (e) { console.error("Ошибка загрузки цен:", e); }
+        }
+        
+        // Запускаем цены и обновляем раз в 5 минут
+        fetchSpotPrice();
+        setInterval(fetchSpotPrice, 300000);
+
+
+        // -------------------------
+        // ЛОГИКА УПРАВЛЕНИЯ SHELLY
+        // -------------------------
         let isUpdating = false;
         let commandLockTimeout = null; 
-
-        // ЗАДЕРЖКА. Главная деталь для стабильности.
         const delay = ms => new Promise(res => setTimeout(res, ms));
 
-        // Функция блокировки. Если мы что-то нажали, фоновый опрос не должен ломать UI
         function lockBackgroundSync() {
             if (commandLockTimeout) clearTimeout(commandLockTimeout);
-            // Блокируем автообновление на 4.5 секунды после ЛЮБОГО действия
-            commandLockTimeout = setTimeout(() => {
-                commandLockTimeout = null;
-                syncAllDevices(); 
-            }, 4500); 
+            commandLockTimeout = setTimeout(() => { commandLockTimeout = null; syncAllDevices(); }, 4500); 
         }
-
-        function isLocked() {
-            return commandLockTimeout !== null;
-        }
+        function isLocked() { return commandLockTimeout !== null; }
 
         async function sendShellyCommand(deviceId, endpoint, params) {
             const targetUrl = `https://shelly-70-eu.shelly.cloud/device/${endpoint}/control`;
@@ -257,13 +358,9 @@
             const card = document.getElementById(`card-${prefix}`);
             if (isOn) { btn.className = 'power-btn on'; card.classList.add('active'); } 
             else { btn.className = 'power-btn off'; card.classList.remove('active'); }
-
             if (brightness !== null) {
                 const slider = document.getElementById(`slider-${prefix}`);
-                if (slider) {
-                    slider.value = brightness;
-                    document.getElementById(`br-${prefix}`).innerText = brightness + '%';
-                }
+                if (slider) { slider.value = brightness; document.getElementById(`br-${prefix}`).innerText = brightness + '%'; }
             }
         }
 
@@ -278,17 +375,16 @@
             return brightness;
         }
 
-        // --- Главный цикл ---
         async function syncAllDevices() {
-            if (isUpdating || isLocked()) return; // Если есть блок - отмена
+            if (isUpdating || isLocked()) return; 
             isUpdating = true;
             let softLightBrightnesses = [];
 
             const devices = [
                 { id: PUMP_DEVICE_ID, ui: (res) => { if (res.isok) { const { power, voltage, isOn } = extractRelayData(res.data.device_status); document.getElementById('ilp-power').innerText = power.toFixed(1); if (voltage !== null) { document.getElementById('ilp-voltage-row').style.display = 'flex'; document.getElementById('ilp-voltage').innerText = voltage.toFixed(1); } document.getElementById('ilp-updated').innerText = `Обновлено: ${new Date().toLocaleTimeString()}`; const badge = document.getElementById('ilp-badge'); badge.className = isOn ? 'status-badge on' : 'status-badge off'; badge.innerText = isOn ? 'ВКЛЮЧЕН' : 'ВЫКЛЮЧЕН'; } } },
+                { id: HT_DEVICE_ID, ui: (res) => { if (res.isok) { const s = res.data.device_status; if (s.tmp) document.getElementById('ht-temp').innerText = s.tmp.value.toFixed(1); if (s.hum) document.getElementById('ht-humidity').innerText = s.hum.value.toFixed(1); document.getElementById('ht-updated').innerText = `Обновлено: ${new Date().toLocaleTimeString()}`; } } },
                 { id: '08b61f69c128', ui: (res) => updateRelayUI(res, 'ev1', false) },
                 { id: 'b0b21c0f6728', ui: (res) => updateRelayUI(res, 'ev2', false) },
-                { id: HT_DEVICE_ID, ui: (res) => { if (res.isok) { const s = res.data.device_status; if (s.tmp) document.getElementById('ht-temp').innerText = s.tmp.value.toFixed(1); if (s.hum) document.getElementById('ht-humidity').innerText = s.hum.value.toFixed(1); document.getElementById('ht-updated').innerText = `Обновлено: ${new Date().toLocaleTimeString()}`; } } },
                 { id: SOFT_LIGHTS[0].id, ui: (res) => { let b = updateRelayUI(res, SOFT_LIGHTS[0].prefix, true); if(b) softLightBrightnesses.push(b); } },
                 { id: SOFT_LIGHTS[1].id, ui: (res) => { let b = updateRelayUI(res, SOFT_LIGHTS[1].prefix, true); if(b) softLightBrightnesses.push(b); } },
                 { id: SOFT_LIGHTS[2].id, ui: (res) => { let b = updateRelayUI(res, SOFT_LIGHTS[2].prefix, true); if(b) softLightBrightnesses.push(b); } },
@@ -296,7 +392,7 @@
             ];
 
             for (const dev of devices) {
-                if (isLocked()) break; // Если во время цикла юзер нажал кнопку - прерываем цикл
+                if (isLocked()) break; 
                 try { const res = await fetchShellyStatus(dev.id); dev.ui(res); } catch (e) {}
                 await delay(300);
             }
@@ -308,9 +404,6 @@
             isUpdating = false;
         }
 
-        // --- Обработка действий пользователя ---
-        
-        // Меняет цифры на экране, пока тянешь ползунок, и блокирует фоновый опрос
         function lockUIAndPreview(prefix, value) {
             lockBackgroundSync();
             document.getElementById(`br-${prefix}`).innerText = value + '%';
@@ -330,27 +423,23 @@
             try { await sendShellyCommand(deviceId, 'light', { turn: 'on', brightness: value }); } catch (e) {}
         }
 
-        // Ползунок "Общая яркость"
         async function setMasterBrightness(value) {
             lockBackgroundSync();
             for (let light of SOFT_LIGHTS) {
                 applyLightUI(light.prefix, true, value);
                 try { await sendShellyCommand(light.id, 'light', { turn: 'on', brightness: value }); } catch (e) {}
-                await delay(2000); // СТРОГАЯ ЗАДЕРЖКА 2 СЕКУНДЫ между лампами
+                await delay(2000); 
             }
         }
 
-        // Пресеты
         async function executePreset(action) {
             lockBackgroundSync();
             try {
                 if (action === 'OFF') {
-                    // 1. Меняем визуал всех ламп сразу
                     for (let l of SOFT_LIGHTS) applyLightUI(l.prefix, false, 0);
                     applyLightUI(TOP_LIGHT.prefix, false, null);
                     document.getElementById('slider-master').value = 0; document.getElementById('br-master').innerText = '0%';
 
-                    // 2. Отправляем команды с ЗАДЕРЖКОЙ В 2 СЕКУНДЫ
                     await sendShellyCommand(TOP_LIGHT.id, 'relay', { turn: 'off' }); await delay(2000);
                     for (let l of SOFT_LIGHTS) { await sendShellyCommand(l.id, 'light', { turn: 'off' }); await delay(2000); }
                 } 
@@ -373,7 +462,7 @@
         }
 
         syncAllDevices();
-        setInterval(syncAllDevices, 20000); // Фоновый опрос теперь раз в 20 секунд
+        setInterval(syncAllDevices, 20000); 
     </script>
 </body>
 </html>
