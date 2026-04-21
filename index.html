@@ -6,75 +6,51 @@
     <title>Panel Shelly - Дом</title>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
     <style>
-        /* Темная тема Shelly Cloud */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #16181c; color: #ffffff; margin: 0; padding: 20px;
-            display: flex; flex-direction: column; align-items: center;
-        }
-
-        h1 {
-            color: #ffffff; font-size: 1.6rem; margin-bottom: 20px; text-align: left;
-            width: 100%; max-width: 1000px; border-bottom: 1px solid #2c3036; padding-bottom: 10px;
-        }
-
-        /* --- Планшетный Layout (Две колонки) --- */
-        .layout-wrapper {
-            display: flex; gap: 30px; width: 100%; max-width: 1000px; align-items: flex-start;
-        }
-        
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #16181c; color: #ffffff; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        h1 { color: #ffffff; font-size: 1.6rem; margin-bottom: 20px; text-align: left; width: 100%; max-width: 1000px; border-bottom: 1px solid #2c3036; padding-bottom: 10px; }
+        .layout-wrapper { display: flex; gap: 30px; width: 100%; max-width: 1000px; align-items: flex-start; }
         .column { flex: 1; display: flex; flex-direction: column; gap: 15px; min-width: 320px; }
-        
         .divider { width: 2px; background: #2c3036; border-radius: 1px; align-self: stretch; margin: 10px 0; }
 
-        /* Адаптация под телефон (сворачивание в 1 колонку) */
         @media (max-width: 800px) {
             .layout-wrapper { flex-direction: column; align-items: center; gap: 20px; }
             .column { width: 100%; max-width: 500px; }
             .divider { width: 100%; height: 2px; margin: 5px 0; }
         }
 
-        .section-title {
-            color: #8b929c; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; 
-            margin-top: 5px; margin-bottom: -5px; padding-left: 5px;
-        }
+        .section-title { color: #8b929c; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; margin-bottom: -5px; padding-left: 5px; }
 
-        /* --- Карточки --- */
-        .relay-card {
-            background-color: #272a31; border-radius: 12px; padding: 12px 15px; display: flex; align-items: center; 
-            justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: all 0.3s ease; border: 2px solid transparent;
-        }
+        /* Карточки */
+        .relay-card { background-color: #272a31; border-radius: 12px; padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: all 0.3s ease; border: 2px solid transparent; }
         .relay-card.active { border: 2px solid #007bff; background-color: #212833; }
         .relay-left { display: flex; align-items: flex-start; gap: 15px; flex-grow: 1; }
         
-        /* Квадратные карточки (Климат/Насос) */
         .squares-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .device-card {
-            background-color: #272a31; border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
-            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-        }
+        .device-card { background-color: #272a31; border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
         .device-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 2px; text-align: center; }
         .device-subtitle { font-size: 0.7rem; color: #8b929c; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;}
-
         .sensor-data { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 8px; padding: 8px; background-color: #1e2025; border-radius: 8px; box-sizing: border-box; }
         .sensor-item { display: flex; align-items: center; gap: 8px; font-size: 1.05rem; font-weight: 600; color: #e0e6ed; }
         .sensor-icon { display: flex; align-items: center; color: #6db1ff; }
-        
         .temp-badge { background-color: #31363f; padding: 8px 15px; border-radius: 15px; font-size: 1.3rem; font-weight: bold; display: flex; align-items: center; gap: 8px; }
         .temp-badge .sensor-icon { color: #ff6b8b; }
-        
         .status-badge { font-size: 0.8rem; padding: 6px 14px; border-radius: 12px; font-weight: 600; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
         .status-badge.on { background-color: rgba(0, 123, 255, 0.2); color: #6db1ff; border: 1px solid #007bff; }
         .status-badge.off { background-color: #1e2025; color: #8b929c; border: 1px solid transparent; }
 
-        /* Виджет Цены */
+        /* Виджет Цены (Доработанный) */
         .price-card { background-color: #272a31; border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
-        .price-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .price-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .price-title { font-size: 0.9rem; font-weight: bold; color: #8b929c; text-transform: uppercase; }
         .price-current { font-size: 1.8rem; font-weight: 900; color: #fff; display: flex; align-items: baseline; gap: 4px; }
-        .price-chart-wrapper { height: 70px; width: 100%; position: relative; margin-top: 5px; }
+        
+        .price-stats-bar { display: flex; justify-content: space-around; background: #1e2025; padding: 8px; border-radius: 10px; margin-bottom: 10px; font-size: 0.85rem; }
+        .price-stats-bar span { display: flex; align-items: center; gap: 5px; font-weight: bold; }
+        
+        .price-chart-wrapper { height: 110px; width: 100%; position: relative; }
 
         .update-time { font-size: 0.65rem; color: #5a6069; margin-top: 10px; text-align: center;}
         .unit { font-size: 0.8rem; color: #8b929c; margin-left: 2px; }
@@ -82,19 +58,16 @@
         .relay-device-icon { width: 44px; height: 44px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border: 2px solid #1a1c21; box-shadow: inset 0 0 10px rgba(0,0,0,0.3); color: #ffffff; }
         .icon-ev { background-color: #92313b; }
         .icon-light { background-color: #d35400; } 
-        
         .relay-info { display: flex; flex-direction: column; gap: 4px; width: 100%; padding-top: 2px; }
         .relay-name { font-size: 1rem; font-weight: 700; color: #ffffff; }
         .relay-stats { display: flex; gap: 15px; font-size: 0.85rem; color: #e0e6ed; font-weight: 600; }
         .relay-stats span { display: flex; align-items: center; gap: 4px; }
         .relay-stats .sensor-icon { width: 12px; height: 12px; color: #8b929c; }
         
-        /* Ползунки и кнопки */
         .light-group { display: flex; flex-direction: column; gap: 6px; }
         .dimmer-slider { -webkit-appearance: none; width: 95%; height: 6px; background: #1e2025; border-radius: 4px; outline: none; margin-top: 8px; margin-bottom: 5px; }
         .dimmer-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #6db1ff; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
         .master-slider::-webkit-slider-thumb { background: #f1c40f; width: 22px; height: 22px; }
-        
         .power-btn { width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; align-self: center; transition: all 0.2s ease; outline: none; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
         .power-btn svg { width: 20px; height: 20px; fill: currentColor; }
         .power-btn.off { background-color: #e0e6ed; color: #007bff; }
@@ -216,15 +189,20 @@
 
             <div class="price-card">
                 <div class="price-header">
-                    <div class="price-title">Цена сейчас</div>
+                    <div class="price-title">Биржа (3ч)</div>
                     <div class="price-current"><span id="spot-price">--</span><span class="unit">c</span></div>
+                </div>
+                <div id="price-stats" class="price-stats-bar">
+                    <span style="color: #27ae60;">⚡⬇️ <b id="p-min">--</b></span>
+                    <span style="color: #7f8c8d;">☁️ <b id="p-avg">--</b></span>
+                    <span style="color: #ff6b8b;">⚡⬆️ <b id="p-max">--</b></span>
                 </div>
                 <div class="price-chart-wrapper">
                     <canvas id="miniPriceChart"></canvas>
                 </div>
             </div>
 
-            <div class="section-title" style="margin-top: 5px;">Зарядка авто</div>
+            <div class="section-title">Зарядка авто</div>
             
             <div class="relay-card" id="card-ev1">
                 <div class="relay-left">
@@ -252,20 +230,16 @@
     </div>
 
     <script>
+        // Регистрируем плагин подписей для Chart.js
+        Chart.register(ChartDataLabels);
+
         const AUTH_KEY = "MWEzMWI0dWlk07E8AECF7EC066046A87D6410853E336FBB1D6F260B8376F3C047EE699E8019EA03F97657F6EF690";
         const HT_DEVICE_ID = "c9f4e3"; 
         const PUMP_DEVICE_ID = "7c87ceb51d71"; 
-        
-        const SOFT_LIGHTS = [
-            { id: '98cdac2d2465', prefix: 'light1' },
-            { id: '349454777f7a', prefix: 'light2' },
-            { id: '98cdac2c88f4', prefix: 'light3' }
-        ];
+        const SOFT_LIGHTS = [{ id: '98cdac2d2465', prefix: 'light1' }, { id: '349454777f7a', prefix: 'light2' }, { id: '98cdac2c88f4', prefix: 'light3' }];
         const TOP_LIGHT = { id: '441793a671e8', prefix: 'light4' };
 
-        // -------------------------
-        // ВИДЖЕТ ЦЕНЫ НА ЭЛЕКТРИЧЕСТВО
-        // -------------------------
+        // --- ЦЕНЫ ---
         let priceChart = null;
         async function fetchSpotPrice() {
             try {
@@ -278,52 +252,56 @@
                 const startIndex = data.findIndex(s => s.DateTime.includes(searchStr));
 
                 if (startIndex !== -1) {
-                    // Текущая цена
-                    const currentPrice = (data[startIndex].PriceWithTax * 100).toFixed(1);
-                    document.getElementById('spot-price').innerText = currentPrice;
-
-                    // График на 3 часа (12 интервалов по 15 мин)
-                    const chartData = data.slice(startIndex, startIndex + 12);
+                    const chartData = data.slice(startIndex, startIndex + 12); // 3 часа (12 столбиков)
                     const prices = chartData.map(s => parseFloat((s.PriceWithTax * 100).toFixed(1)));
-                    
-                    const FREE = 2, CHEAP = 5, HIGH = 10;
-                    const colors = prices.map(p => p < FREE ? '#00d1db' : p < CHEAP ? '#95d5b2' : p < HIGH ? '#f1c40f' : '#ff6b8b');
+                    const labels = chartData.map(s => {
+                        const d = new Date(s.DateTime);
+                        return d.getHours() + ":" + d.getMinutes().toString().padStart(2, '0');
+                    });
+
+                    // Статистика
+                    document.getElementById('spot-price').innerText = prices[0].toFixed(1);
+                    document.getElementById('p-min').innerText = Math.min(...prices).toFixed(1);
+                    document.getElementById('p-max').innerText = Math.max(...prices).toFixed(1);
+                    document.getElementById('p-avg').innerText = (prices.reduce((a,b)=>a+b,0)/prices.length).toFixed(1);
+
+                    const colors = prices.map(p => p < 2 ? '#00d1db' : p < 5 ? '#95d5b2' : p < 10 ? '#f1c40f' : '#ff6b8b');
 
                     if (priceChart) priceChart.destroy();
-                    const ctx = document.getElementById('miniPriceChart').getContext('2d');
-                    priceChart = new Chart(ctx, {
+                    priceChart = new Chart(document.getElementById('miniPriceChart').getContext('2d'), {
                         type: 'bar',
                         data: {
-                            labels: Array(12).fill(''), // Без подписей
-                            datasets: [{ data: prices, backgroundColor: colors, borderRadius: 4, barPercentage: 0.9 }]
+                            labels: labels,
+                            datasets: [{ data: prices, backgroundColor: colors, borderRadius: 3, barPercentage: 0.8 }]
                         },
                         options: {
                             responsive: true, maintainAspectRatio: false,
-                            plugins: { legend: { display: false }, tooltip: { enabled: false } },
-                            scales: { x: { display: false }, y: { display: false } },
-                            animation: { duration: 0 }
+                            layout: { padding: { top: 15 } }, // Отступ для цифр
+                            plugins: { 
+                                legend: { display: false },
+                                datalabels: { 
+                                    anchor: 'end', align: 'top', offset: -2,
+                                    formatter: Math.round, font: { size: 9, weight: 'bold' }, color: '#8b929c'
+                                }
+                            },
+                            scales: { 
+                                x: { ticks: { color: '#5a6069', font: { size: 8 }, maxRotation: 90, minRotation: 90 }, grid: { display: false } }, 
+                                y: { display: false } 
+                            }
                         }
                     });
                 }
-            } catch (e) { console.error("Ошибка загрузки цен:", e); }
+            } catch (e) { console.error("Ошибка цен:", e); }
         }
-        
-        // Запускаем цены и обновляем раз в 5 минут
         fetchSpotPrice();
         setInterval(fetchSpotPrice, 300000);
 
-
-        // -------------------------
-        // ЛОГИКА УПРАВЛЕНИЯ SHELLY
-        // -------------------------
+        // --- ЛОГИКА SHELLY ---
         let isUpdating = false;
         let commandLockTimeout = null; 
         const delay = ms => new Promise(res => setTimeout(res, ms));
 
-        function lockBackgroundSync() {
-            if (commandLockTimeout) clearTimeout(commandLockTimeout);
-            commandLockTimeout = setTimeout(() => { commandLockTimeout = null; syncAllDevices(); }, 4500); 
-        }
+        function lockBackgroundSync() { if (commandLockTimeout) clearTimeout(commandLockTimeout); commandLockTimeout = setTimeout(() => { commandLockTimeout = null; syncAllDevices(); }, 4500); }
         function isLocked() { return commandLockTimeout !== null; }
 
         async function sendShellyCommand(deviceId, endpoint, params) {
@@ -347,7 +325,6 @@
             else if (status.relays && status.relays.length > 0) { isOn = status.relays[0].ison; if (status.relays[0].brightness !== undefined) brightness = status.relays[0].brightness; } 
             else if (status['light:0']) { isOn = status['light:0'].output; brightness = status['light:0'].brightness; } 
             else if (status['switch:0'] && status['switch:0'].output !== undefined) { isOn = status['switch:0'].output; }
-            
             if (status.meters && status.meters.length > 0) { power = status.meters[0].power || 0; if (status.meters[0].voltage !== undefined) voltage = status.meters[0].voltage; } 
             else if (status['switch:0']) { power = status['switch:0'].apower || 0; if (status['switch:0'].voltage !== undefined) voltage = status['switch:0'].voltage; }
             return { power, voltage, isOn, brightness };
@@ -378,91 +355,49 @@
         async function syncAllDevices() {
             if (isUpdating || isLocked()) return; 
             isUpdating = true;
-            let softLightBrightnesses = [];
-
+            let softBrightnesses = [];
             const devices = [
                 { id: PUMP_DEVICE_ID, ui: (res) => { if (res.isok) { const { power, voltage, isOn } = extractRelayData(res.data.device_status); document.getElementById('ilp-power').innerText = power.toFixed(1); if (voltage !== null) { document.getElementById('ilp-voltage-row').style.display = 'flex'; document.getElementById('ilp-voltage').innerText = voltage.toFixed(1); } document.getElementById('ilp-updated').innerText = `Обновлено: ${new Date().toLocaleTimeString()}`; const badge = document.getElementById('ilp-badge'); badge.className = isOn ? 'status-badge on' : 'status-badge off'; badge.innerText = isOn ? 'ВКЛЮЧЕН' : 'ВЫКЛЮЧЕН'; } } },
                 { id: HT_DEVICE_ID, ui: (res) => { if (res.isok) { const s = res.data.device_status; if (s.tmp) document.getElementById('ht-temp').innerText = s.tmp.value.toFixed(1); if (s.hum) document.getElementById('ht-humidity').innerText = s.hum.value.toFixed(1); document.getElementById('ht-updated').innerText = `Обновлено: ${new Date().toLocaleTimeString()}`; } } },
                 { id: '08b61f69c128', ui: (res) => updateRelayUI(res, 'ev1', false) },
                 { id: 'b0b21c0f6728', ui: (res) => updateRelayUI(res, 'ev2', false) },
-                { id: SOFT_LIGHTS[0].id, ui: (res) => { let b = updateRelayUI(res, SOFT_LIGHTS[0].prefix, true); if(b) softLightBrightnesses.push(b); } },
-                { id: SOFT_LIGHTS[1].id, ui: (res) => { let b = updateRelayUI(res, SOFT_LIGHTS[1].prefix, true); if(b) softLightBrightnesses.push(b); } },
-                { id: SOFT_LIGHTS[2].id, ui: (res) => { let b = updateRelayUI(res, SOFT_LIGHTS[2].prefix, true); if(b) softLightBrightnesses.push(b); } },
+                { id: SOFT_LIGHTS[0].id, ui: (res) => { let b = updateRelayUI(res, SOFT_LIGHTS[0].prefix, true); if(b!==null) softBrightnesses.push(b); } },
+                { id: SOFT_LIGHTS[1].id, ui: (res) => { let b = updateRelayUI(res, SOFT_LIGHTS[1].prefix, true); if(b!==null) softBrightnesses.push(b); } },
+                { id: SOFT_LIGHTS[2].id, ui: (res) => { let b = updateRelayUI(res, SOFT_LIGHTS[2].prefix, true); if(b!==null) softBrightnesses.push(b); } },
                 { id: TOP_LIGHT.id, ui: (res) => updateRelayUI(res, TOP_LIGHT.prefix, true) }
             ];
-
-            for (const dev of devices) {
-                if (isLocked()) break; 
-                try { const res = await fetchShellyStatus(dev.id); dev.ui(res); } catch (e) {}
-                await delay(300);
-            }
-            
-            if (!isLocked() && softLightBrightnesses.length > 0) {
-                let avg = Math.round(softLightBrightnesses.reduce((a,b)=>a+b, 0) / softLightBrightnesses.length);
+            for (const dev of devices) { if (isLocked()) break; try { const res = await fetchShellyStatus(dev.id); dev.ui(res); } catch (e) {} await delay(300); }
+            if (!isLocked() && softBrightnesses.length > 0) {
+                let avg = Math.round(softBrightnesses.reduce((a,b)=>a+b, 0) / softBrightnesses.length);
                 document.getElementById('slider-master').value = avg; document.getElementById('br-master').innerText = avg + '%';
             }
             isUpdating = false;
         }
 
-        function lockUIAndPreview(prefix, value) {
-            lockBackgroundSync();
-            document.getElementById(`br-${prefix}`).innerText = value + '%';
-        }
-
-        async function toggleDevice(deviceId, prefix, endpointType) {
-            lockBackgroundSync();
-            const btn = document.getElementById(`btn-${prefix}`);
-            const command = btn.classList.contains('on') ? 'off' : 'on';
-            applyLightUI(prefix, command === 'on', null);
-            try { await sendShellyCommand(deviceId, endpointType, { turn: command }); } catch (error) { }
-        }
-
-        async function setBrightness(deviceId, prefix, value) {
-            lockBackgroundSync();
-            applyLightUI(prefix, true, value);
-            try { await sendShellyCommand(deviceId, 'light', { turn: 'on', brightness: value }); } catch (e) {}
-        }
-
-        async function setMasterBrightness(value) {
-            lockBackgroundSync();
-            for (let light of SOFT_LIGHTS) {
-                applyLightUI(light.prefix, true, value);
-                try { await sendShellyCommand(light.id, 'light', { turn: 'on', brightness: value }); } catch (e) {}
-                await delay(2000); 
-            }
-        }
-
+        function lockUIAndPreview(prefix, value) { lockBackgroundSync(); document.getElementById(`br-${prefix}`).innerText = value + '%'; }
+        async function toggleDevice(deviceId, prefix, endpointType) { lockBackgroundSync(); const btn = document.getElementById(`btn-${prefix}`); const command = btn.classList.contains('on') ? 'off' : 'on'; applyLightUI(prefix, command === 'on', null); try { await sendShellyCommand(deviceId, endpointType, { turn: command }); } catch (error) { } }
+        async function setBrightness(deviceId, prefix, value) { lockBackgroundSync(); applyLightUI(prefix, true, value); try { await sendShellyCommand(deviceId, 'light', { turn: 'on', brightness: value }); } catch (e) {} }
+        async function setMasterBrightness(value) { lockBackgroundSync(); for (let light of SOFT_LIGHTS) { applyLightUI(light.prefix, true, value); try { await sendShellyCommand(light.id, 'light', { turn: 'on', brightness: value }); } catch (e) {} await delay(2000); } }
         async function executePreset(action) {
             lockBackgroundSync();
             try {
                 if (action === 'OFF') {
-                    for (let l of SOFT_LIGHTS) applyLightUI(l.prefix, false, 0);
-                    applyLightUI(TOP_LIGHT.prefix, false, null);
-                    document.getElementById('slider-master').value = 0; document.getElementById('br-master').innerText = '0%';
-
+                    for (let l of SOFT_LIGHTS) applyLightUI(l.prefix, false, 0); applyLightUI(TOP_LIGHT.prefix, false, null);
                     await sendShellyCommand(TOP_LIGHT.id, 'relay', { turn: 'off' }); await delay(2000);
                     for (let l of SOFT_LIGHTS) { await sendShellyCommand(l.id, 'light', { turn: 'off' }); await delay(2000); }
-                } 
-                else if (action === 'MAX') {
-                    for (let l of SOFT_LIGHTS) applyLightUI(l.prefix, true, 100);
-                    applyLightUI(TOP_LIGHT.prefix, true, null);
-                    document.getElementById('slider-master').value = 100; document.getElementById('br-master').innerText = '100%';
-
+                } else if (action === 'MAX') {
+                    for (let l of SOFT_LIGHTS) applyLightUI(l.prefix, true, 100); applyLightUI(TOP_LIGHT.prefix, true, null);
                     await sendShellyCommand(TOP_LIGHT.id, 'relay', { turn: 'on' }); await delay(2000);
                     for (let l of SOFT_LIGHTS) { await sendShellyCommand(l.id, 'light', { turn: 'on', brightness: 100 }); await delay(2000); }
-                } 
-                else {
-                    let br = parseInt(action);
-                    for (let l of SOFT_LIGHTS) applyLightUI(l.prefix, true, br);
-                    document.getElementById('slider-master').value = br; document.getElementById('br-master').innerText = br + '%';
-
+                } else {
+                    let br = parseInt(action); for (let l of SOFT_LIGHTS) applyLightUI(l.prefix, true, br);
                     for (let l of SOFT_LIGHTS) { await sendShellyCommand(l.id, 'light', { turn: 'on', brightness: br }); await delay(2000); }
                 }
             } catch (e) {}
         }
 
         syncAllDevices();
-        setInterval(syncAllDevices, 20000); 
+        setInterval(syncAllDevices, 20000);
     </script>
 </body>
 </html>
