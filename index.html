@@ -23,7 +23,6 @@
 
         .section-title { color: #8b929c; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; margin-bottom: -5px; padding-left: 5px; }
 
-        /* Карточки */
         .relay-card { background-color: #272a31; border-radius: 12px; padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: all 0.3s ease; border: 2px solid transparent; }
         .relay-card.active { border: 2px solid #007bff; background-color: #212833; }
         .relay-left { display: flex; align-items: flex-start; gap: 15px; flex-grow: 1; }
@@ -41,7 +40,7 @@
         .status-badge.on { background-color: rgba(0, 123, 255, 0.2); color: #6db1ff; border: 1px solid #007bff; }
         .status-badge.off { background-color: #1e2025; color: #8b929c; border: 1px solid transparent; }
 
-        /* Виджет Цены (Доработанный) */
+        /* Виджет Цены */
         .price-card { background-color: #272a31; border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
         .price-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .price-title { font-size: 0.9rem; font-weight: bold; color: #8b929c; text-transform: uppercase; }
@@ -49,6 +48,7 @@
         
         .price-stats-bar { display: flex; justify-content: space-around; background: #1e2025; padding: 8px; border-radius: 10px; margin-bottom: 10px; font-size: 0.85rem; }
         .price-stats-bar span { display: flex; align-items: center; gap: 5px; font-weight: bold; }
+        .stat-label { font-size: 0.7rem; color: #5a6069; text-transform: uppercase; margin-right: 2px;}
         
         .price-chart-wrapper { height: 110px; width: 100%; position: relative; }
 
@@ -189,14 +189,16 @@
 
             <div class="price-card">
                 <div class="price-header">
-                    <div class="price-title">Биржа (3ч)</div>
+                    <div class="price-title">Биржа: сегодня</div>
                     <div class="price-current"><span id="spot-price">--</span><span class="unit">c</span></div>
                 </div>
+                
                 <div id="price-stats" class="price-stats-bar">
-                    <span style="color: #27ae60;">⚡⬇️ <b id="p-min">--</b></span>
-                    <span style="color: #7f8c8d;">☁️ <b id="p-avg">--</b></span>
-                    <span style="color: #ff6b8b;">⚡⬆️ <b id="p-max">--</b></span>
+                    <span style="color: #27ae60;" title="Минимум сегодня"><span class="stat-label">Мин</span> ⚡⬇️ <b id="p-min">--</b></span>
+                    <span style="color: #7f8c8d;" title="Средняя сегодня"><span class="stat-label">Ср</span> ☁️ <b id="p-avg">--</b></span>
+                    <span style="color: #ff6b8b;" title="Максимум сегодня"><span class="stat-label">Макс</span> ⚡⬆️ <b id="p-max">--</b></span>
                 </div>
+                
                 <div class="price-chart-wrapper">
                     <canvas id="miniPriceChart"></canvas>
                 </div>
@@ -246,26 +248,41 @@
                 const res = await fetch('https://api.spot-hinta.fi/TodayAndDayForward');
                 const data = await res.json();
                 const now = new Date();
+                
+                // 1. СТАТИСТИКА ЗА ВЕСЬ ТЕКУЩИЙ ДЕНЬ
+                const todayStr = now.toLocaleString('sv-SE').substring(0, 10); // Получаем 'YYYY-MM-DD'
+                const todayData = data.filter(s => s.DateTime.startsWith(todayStr));
+                
+                if (todayData.length > 0) {
+                    const todayPrices = todayData.map(s => s.PriceWithTax * 100);
+                    const min = Math.min(...todayPrices).toFixed(1);
+                    const max = Math.max(...todayPrices).toFixed(1);
+                    const avg = (todayPrices.reduce((a, b) => a + b, 0) / todayPrices.length).toFixed(1);
+                    
+                    document.getElementById('p-min').innerText = min;
+                    document.getElementById('p-max').innerText = max;
+                    document.getElementById('p-avg').innerText = avg;
+                }
+
+                // 2. ГРАФИК НА 3 ЧАСА (12 столбцов)
                 const quarter = Math.floor(now.getMinutes() / 15) * 15;
                 const refTime = new Date(now); refTime.setMinutes(quarter, 0, 0);
                 const searchStr = refTime.toLocaleString('sv-SE').replace(' ', 'T').substring(0, 16);
                 const startIndex = data.findIndex(s => s.DateTime.includes(searchStr));
 
                 if (startIndex !== -1) {
-                    const chartData = data.slice(startIndex, startIndex + 12); // 3 часа (12 столбиков)
+                    const chartData = data.slice(startIndex, startIndex + 12); 
                     const prices = chartData.map(s => parseFloat((s.PriceWithTax * 100).toFixed(1)));
                     const labels = chartData.map(s => {
                         const d = new Date(s.DateTime);
                         return d.getHours() + ":" + d.getMinutes().toString().padStart(2, '0');
                     });
 
-                    // Статистика
+                    // Текущая цена (крупно)
                     document.getElementById('spot-price').innerText = prices[0].toFixed(1);
-                    document.getElementById('p-min').innerText = Math.min(...prices).toFixed(1);
-                    document.getElementById('p-max').innerText = Math.max(...prices).toFixed(1);
-                    document.getElementById('p-avg').innerText = (prices.reduce((a,b)=>a+b,0)/prices.length).toFixed(1);
 
-                    const colors = prices.map(p => p < 2 ? '#00d1db' : p < 5 ? '#95d5b2' : p < 10 ? '#f1c40f' : '#ff6b8b');
+                    const FREE = 2, CHEAP = 5, HIGH = 10;
+                    const colors = prices.map(p => p < FREE ? '#00d1db' : p < CHEAP ? '#95d5b2' : p < HIGH ? '#f1c40f' : '#ff6b8b');
 
                     if (priceChart) priceChart.destroy();
                     priceChart = new Chart(document.getElementById('miniPriceChart').getContext('2d'), {
@@ -276,17 +293,18 @@
                         },
                         options: {
                             responsive: true, maintainAspectRatio: false,
-                            layout: { padding: { top: 15 } }, // Отступ для цифр
+                            layout: { padding: { top: 15 } }, // Отступ сверху для цифр
                             plugins: { 
                                 legend: { display: false },
                                 datalabels: { 
                                     anchor: 'end', align: 'top', offset: -2,
-                                    formatter: Math.round, font: { size: 9, weight: 'bold' }, color: '#8b929c'
+                                    formatter: (val) => val.toFixed(1), // Оставляем 1 знак после запятой
+                                    font: { size: 9, weight: 'bold' }, color: '#8b929c'
                                 }
                             },
                             scales: { 
-                                x: { ticks: { color: '#5a6069', font: { size: 8 }, maxRotation: 90, minRotation: 90 }, grid: { display: false } }, 
-                                y: { display: false } 
+                                x: { ticks: { color: '#5a6069', font: { size: 9, weight: 'bold' }, maxRotation: 90, minRotation: 90 }, grid: { display: false } }, 
+                                y: { display: false, suggestedMax: Math.max(...prices) * 1.15 } // Увеличиваем шкалу Y, чтобы цифры не резались
                             }
                         }
                     });
